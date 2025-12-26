@@ -60,7 +60,7 @@ CREATE TABLE BacSi (
     ThanhTuu NVARCHAR(MAX),
     MoTa NVARCHAR(MAX),
     AnhDaiDien NVARCHAR(255),
-    NoiLamViec NVARCHAR(255),
+    soNhaTenDuong NVARCHAR(255),
     CCCD VARCHAR(20),
     IdBenhVien INT,
     IdPhuongXa INT,
@@ -76,12 +76,10 @@ CREATE TABLE BenhNhan (
     NgaySinh DATE,
     GioiTinh NVARCHAR(10),
     NgayDangKy DATE,
-    DiaDiem NVARCHAR(255),
+    soNhaTenDuong NVARCHAR(255),
     CCCD VARCHAR(20) NULL,
-    IdBenhVien INT,
     IdPhuongXa INT,
-    FOREIGN KEY (IdPhuongXa) REFERENCES PhuongXa(IdPhuongXa),
-    FOREIGN KEY (IdBenhVien) REFERENCES BenhVien(IdBenhVien)
+    FOREIGN KEY (IdPhuongXa) REFERENCES PhuongXa(IdPhuongXa)
 );
 CREATE TABLE CanBoHanhChinh (
     IdCanBo INT IDENTITY PRIMARY KEY,
@@ -92,7 +90,7 @@ CREATE TABLE CanBoHanhChinh (
     NgaySinh DATE,
     GioiTinh NVARCHAR(10),
     ChucVu NVARCHAR(100),
-    NoiLamViec NVARCHAR(255),
+    soNhaTenDuong NVARCHAR(255),
     CCCD VARCHAR(20),
     IdBenhVien INT,
     IdPhuongXa INT,
@@ -174,7 +172,7 @@ CREATE TABLE DanhGia (
     FOREIGN KEY (IdBacSi) REFERENCES BacSi(IdBacSi),
     FOREIGN KEY (IdBenhNhan) REFERENCES BenhNhan(IdBenhNhan)
 );
-------------------------------------------------------TÌM KIẾM – THỐNG KÊ – BÁO CÁO-------------------------------------
+------------------------------------------------------TÌM KIẾM – BÁO CÁO-------------------------------------
 CREATE TABLE TimKiem (
     IdTimKiem INT IDENTITY PRIMARY KEY,
     TuKhoaTK NVARCHAR(255),
@@ -184,22 +182,6 @@ CREATE TABLE TimKiem (
     IdBenhNhan INT,
     FOREIGN KEY (IdBacSi) REFERENCES BacSi(IdBacSi),
     FOREIGN KEY (IdBenhNhan) REFERENCES BenhNhan(IdBenhNhan)
-);
-
-CREATE TABLE ThongKe (
-    IdThongKe INT IDENTITY PRIMARY KEY,
-    NgayThongKe DATE,
-    ChuKyThongKe NVARCHAR(50),
-    DoiTuongThongKe NVARCHAR(100),
-    SoLuotTimKiem INT,
-    LuotXemHoSo INT,
-    LuotYeuThich INT,
-    TopTuKhoaTimKiem NVARCHAR(255),
-    PhamTramTimKiemLoc FLOAT,
-    IdBacSi INT,
-    IdCanBo INT,
-    FOREIGN KEY (IdCanBo) REFERENCES CanBoHanhChinh(IdCanBo),
-    FOREIGN KEY (IdBacSi) REFERENCES BacSi(IdBacSi)
 );
 CREATE TABLE BaoCao (
     IdBaoCao INT IDENTITY PRIMARY KEY,
