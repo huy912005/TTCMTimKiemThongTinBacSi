@@ -647,6 +647,120 @@ BEGIN
     RETURN NULLIF(@diachi, N'');
 END
 GO
+-- 10. fn_TinhTyLePhanHoi: Tính % số thông báo đã xem trên tổng số thông báo nhận được (cho Bệnh nhân)
+GO
+CREATE FUNCTION fn_TinhTyLePhanHoi(@idBenhNhan INT)
+RETURNS DECIMAL(5,2)
+AS
+BEGIN
+    DECLARE @TongSo INT, @SoDaXem INT, @TyLe DECIMAL(5,2)
+    
+    SELECT @TongSo = COUNT(*) FROM ThongBao_BenhNhan WHERE IdBenhNhan = @idBenhNhan
+    SELECT @SoDaXem = COUNT(*) FROM ThongBao_BenhNhan WHERE IdBenhNhan = @idBenhNhan AND TrangThaiXem = N'Đã xem'
+    
+    IF @TongSo = 0 SET @TyLe = 0
+    ELSE SET @TyLe = (CAST(@SoDaXem AS DECIMAL(5,2)) / @TongSo) * 100
+    
+    RETURN @TyLe
+END
+GO
+	-- Kiểm tra cho Bệnh nhân Id = 1 (Dương Công Tiến)
+	-- Trong phần INSERT của bạn, Tiến có 1 thông báo và đã xem -> Kết quả kỳ vọng: 100.00
+	/*SELECT 
+		HoTen, 
+		dbo.fn_TinhTyLePhanHoi(IdBenhNhan) AS TyLePhanHoi_PhanTram
+	FROM BenhNhan
+	WHERE IdBenhNhan = 1;
+
+	-- Kiểm tra cho Bệnh nhân Id = 2 (Hoàng Lệ Thu)
+	-- Thu có 1 thông báo nhưng NULL NgayXem -> Kết quả kỳ vọng: 0.00
+	SELECT 
+		HoTen, 
+		dbo.fn_TinhTyLePhanHoi(IdBenhNhan) AS TyLePhanHoi_PhanTram
+	FROM BenhNhan
+	WHERE IdBenhNhan = 2;*/
+
+-- 11. fn_LayDanhSachBacSiTheoPhuong: Trả về bảng danh sách bác sĩ tại 1 IdPhuongXa
+GO
+CREATE FUNCTION fn_LayDanhSachBacSiTheoPhuong(@idPhuongXa INT)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT IdBacSi, HoTen, SoDienThoai, BangCap
+    FROM BacSi
+    WHERE IdPhuongXa = @idPhuongXa
+)
+GO
+	-- Lấy bác sĩ ở Phường Hải Châu I (IdPhuongXa = 1)
+	-- Kết quả kỳ vọng: Bác sĩ Phạm Minh Huy
+	/*SELECT * FROM dbo.fn_LayDanhSachBacSiTheoPhuong(1);
+
+	-- Thử với một ID không có bác sĩ nào (ví dụ: 99) -> Kết quả kỳ vọng: Bảng trống
+	SELECT * FROM dbo.fn_LayDanhSachBacSiTheoPhuong(99);*/
+
+-- 12. fn_KiemTraCCCD: Kiểm tra độ dài và định dạng số CCCD (12 số)
+GO
+CREATE FUNCTION fn_KiemTraCCCD(@cccd VARCHAR(20))
+RETURNS NVARCHAR(50)
+AS
+BEGIN
+    IF LEN(@cccd) = 12 AND @cccd NOT LIKE '%[^0-9]%'
+        RETURN N'Hợp lệ'
+    RETURN N'Không hợp lệ'
+END
+GO
+	/*SELECT 
+		'049205002552' AS SoNhapVao, dbo.fn_KiemTraCCCD('049205002552') AS KetQua -- Đúng 12 số
+	UNION ALL
+	SELECT 
+		'12345' AS SoNhapVao, dbo.fn_KiemTraCCCD('12345') AS KetQua -- Sai (thiếu độ dài)
+	UNION ALL
+	SELECT 
+		'04920500255A' AS SoNhapVao, dbo.fn_KiemTraCCCD('04920500255A') AS KetQua; -- Sai (chứa chữ)*/
+
+-- 13. fn_LocTuKhoaNhayCam: Kiểm tra nội dung DanhGia có chứa từ cấm không
+GO
+CREATE FUNCTION fn_LocTuKhoaNhayCam(@noiDung NVARCHAR(MAX))
+RETURNS NVARCHAR(50)
+AS
+BEGIN
+    -- Bạn có thể thêm nhiều từ cấm vào đây
+    IF @noiDung LIKE N'%tệ%' OR @noiDung LIKE N'%dở%' OR @noiDung LIKE N'%lừa đảo%'
+        RETURN N'Vi phạm'
+    RETURN N'Hợp lệ'
+END
+GO
+	/*SELECT 
+		N'Bác sĩ rất tận tâm' AS NoiDung, dbo.fn_LocTuKhoaNhayCam(N'Bác sĩ rất tận tâm') AS KiemTra
+	UNION ALL
+	SELECT
+N'Dịch vụ quá tệ và lừa đảo' AS NoiDung, dbo.fn_LocTuKhoaNhayCam(N'Dịch vụ quá tệ và lừa đảo') AS KiemTra;*/
+
+-- 14. fn_DemSoCaKhamTrongNgay: Đếm tổng số ca làm việc của 1 bệnh viện trong ngày
+GO
+CREATE FUNCTION fn_DemSoCaKhamTrongNgay(@idBenhVien INT, @ngay DATE)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @soCa INT
+    SELECT @soCa = COUNT(l.IdLichLamViec)
+    FROM LichLamViec l
+    JOIN BacSi b ON l.IdBacSi = b.IdBacSi
+    WHERE b.IdBenhVien = @idBenhVien AND l.NgayLamViec = @ngay
+    RETURN ISNULL(@soCa, 0)
+END
+GO
+	-- Kiểm tra Bệnh viện Đà Nẵng (Id = 1) vào ngày 2024-12-30
+	-- Kết quả kỳ vọng: 1 (vì có bác sĩ Phạm Minh Huy trực P101)
+	/*SELECT 
+		TenBenhVien, 
+		dbo.fn_DemSoCaKhamTrongNgay(IdBenhVien, '2024-12-30') AS SoCaTrucTrongNgay
+	FROM BenhVien
+	WHERE IdBenhVien = 1;
+
+	-- Thử ngày không có lịch khám -> Kết quả kỳ vọng: 0
+	SELECT dbo.fn_DemSoCaKhamTrongNgay(1, '1900-01-01') AS SoCaTrucTrongNgay;*/
+
 --15. fn_LayGioBatDau: Trích xuất giờ bắt đầu từ chuỗi KhungGio (ví dụ: "08:00 - 10:00").
 GO
 CREATE FUNCTION fn_LayGioBatDau(@khungGio NVARCHAR(50))
@@ -1063,6 +1177,148 @@ BEGIN
     --THROW 50303, N'LoaiNguoiDung không hợp lệ. Dùng: BACSI | BENHNHAN | CANBO.', 1;
 END
 GO
+-- 10. pr_ImportDanhSachPhuongXa: Thêm hàng loạt dữ liệu địa chính từ bảng tạm
+GO
+CREATE OR ALTER PROC pr_ImportDanhSachPhuongXa
+AS
+BEGIN
+    -- Kiểm tra nếu bảng tạm tồn tại trong phiên làm việc hiện tại
+    IF OBJECT_ID('tempdb..#TmpPhuongXa') IS NOT NULL
+    BEGIN
+        INSERT INTO PhuongXa (TenPhuongXa, IdTinhThanh)
+        SELECT t.TenPhuong, t.IdTinh
+        FROM #TmpPhuongXa t
+        WHERE NOT EXISTS (
+            SELECT 1 FROM PhuongXa p 
+            WHERE p.TenPhuongXa = t.TenPhuong AND p.IdTinhThanh = t.IdTinh
+        );
+        PRINT N'Đã nhập dữ liệu thành công.';
+    END
+    ELSE
+    BEGIN
+        PRINT N'Lỗi: Không tìm thấy bảng tạm #TmpPhuongXa.';
+    END
+END;
+GO
+	-- TEST CÂU 10:
+	/*CREATE TABLE #TmpPhuongXa (TenPhuong NVARCHAR(100), IdTinh INT);
+	INSERT INTO #TmpPhuongXa VALUES (N'Phường Mỹ Khê', 1), (N'Phường An Khê', 1);
+	EXEC pr_ImportDanhSachPhuongXa;
+	SELECT * FROM PhuongXa WHERE TenPhuongXa IN (N'Phường Mỹ Khê', N'Phường An Khê');
+	DROP TABLE #TmpPhuongXa;
+	GO*/
+
+-- 11. pr_DuyetDanhGia: Cán bộ hành chính kiểm tra đánh giá (Xử lý trực tiếp không dùng Function)
+GO
+CREATE OR ALTER PROC pr_DuyetDanhGia
+    @IdDanhGia INT,
+    @IdCanBo INT
+AS
+BEGIN
+    DECLARE @NoiDung NVARCHAR(MAX);
+    SELECT @NoiDung = NoiDung FROM DanhGia WHERE IdDanhGia = @IdDanhGia;
+
+    -- Kiểm tra từ khóa nhạy cảm trực tiếp bằng LIKE
+    IF @NoiDung LIKE N'%tệ%' OR @NoiDung LIKE N'%dở%' OR @NoiDung LIKE N'%lừa đảo%' OR @NoiDung LIKE N'%kém%'
+    BEGIN
+        PRINT N'Đánh giá ID ' + CAST(@IdDanhGia AS NVARCHAR) + N' vi phạm quy tắc. KHÔNG DUYỆT!';
+    END
+    ELSE
+    BEGIN
+        PRINT N'Đánh giá hợp lệ. Cán bộ ID ' + CAST(@IdCanBo AS NVARCHAR) + N' đã xác nhận.';
+    END
+END;
+GO
+	-- TEST CÂU 11:
+	-- 1. Test nội dung sạch
+	/*EXEC pr_DuyetDanhGia @IdDanhGia = 1, @IdCanBo = 1;
+	-- 2. Test nội dung nhạy cảm
+	INSERT INTO DanhGia (DiemDanhGia, NoiDung, NgayDanhGia, IdBacSi, IdBenhNhan) 
+	VALUES (1, N'Bác sĩ lừa đảo khách hàng', GETDATE(), 1, 1);
+	DECLARE @IdTest11 INT = SCOPE_IDENTITY();
+	EXEC pr_DuyetDanhGia @IdDanhGia = @IdTest11, @IdCanBo = 1;
+	GO*/
+
+-- 12. pr_SuaThongTinBenhVien: Cập nhật Hotline/Email của bệnh viện
+GO
+CREATE OR ALTER PROC pr_SuaThongTinBenhVien
+    @IdBenhVien INT,
+    @Hotline VARCHAR(20),
+    @Email VARCHAR(100)
+AS
+BEGIN
+    UPDATE BenhVien
+    SET HotLine = @Hotline, Email = @Email
+    WHERE IdBenhVien = @IdBenhVien;
+
+    IF @@ROWCOUNT > 0
+        PRINT N'Cập nhật thông tin bệnh viện ' + CAST(@IdBenhVien AS NVARCHAR) + N' thành công.';
+    ELSE
+        PRINT N'Lỗi: Không tìm thấy ID bệnh viện này.';
+END;
+GO
+	-- TEST CÂU 12:
+	/*EXEC pr_SuaThongTinBenhVien @IdBenhVien = 1, @Hotline = '0988777666', @Email = 'danang_hospital@gmail.com';
+	SELECT IdBenhVien, TenBenhVien, HotLine, Email FROM BenhVien WHERE IdBenhVien = 1;
+	GO*/
+-- 13. pr_ChuyenCongTacBacSi: Thay đổi IdBenhVien và dọn dẹp lịch làm việc
+GO
+CREATE OR ALTER PROC pr_ChuyenCongTacBacSi
+    @IdBacSi INT,
+    @IdBenhVienMoi INT
+AS
+BEGIN
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- Đổi cơ sở công tác
+        UPDATE BacSi SET IdBenhVien = @IdBenhVienMoi WHERE IdBacSi = @IdBacSi;
+
+        -- Xóa lịch trực tại cơ sở cũ từ hôm nay trở đi (vì phòng cũ không còn hiệu lực)
+        DELETE FROM LichLamViec 
+        WHERE IdBacSi = @IdBacSi AND NgayLamViec >= CAST(GETDATE() AS DATE);
+
+        COMMIT TRANSACTION;
+        PRINT N'Bác sĩ ID ' + CAST(@IdBacSi AS NVARCHAR) + N' đã chuyển viện.';
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        PRINT N'Lỗi hệ thống: Không thể chuyển công tác.';
+    END CATCH
+END;
+GO
+	-- TEST CÂU 13:
+	-- Chuyển bác sĩ 2 sang bệnh viện 1
+	/*EXEC pr_ChuyenCongTacBacSi @IdBacSi = 2, @IdBenhVienMoi = 1;
+	SELECT HoTen, IdBenhVien FROM BacSi WHERE IdBacSi = 2;
+	GO*/
+
+-- 14. pr_TaoBaoCaoDinhKy: Tổng hợp số liệu vào bảng BaoCao
+GO
+CREATE OR ALTER PROC pr_TaoBaoCaoDinhKy
+    @IdCanBo INT
+AS
+BEGIN
+    DECLARE @SlBacSi INT, @SlBenhNhan INT;
+    
+    SELECT @SlBacSi = COUNT(*) FROM BacSi;
+    SELECT @SlBenhNhan = COUNT(*) FROM BenhNhan;
+    
+    INSERT INTO BaoCao (NoiDung, LoaiBaoCao, NgayTaoBaoCao, IdCanBo)
+    VALUES (
+        N'Thống kê định kỳ: ' + CAST(@SlBacSi AS NVARCHAR) + N' bác sĩ, ' + 
+        CAST(@SlBenhNhan AS NVARCHAR) + N' bệnh nhân.', 
+        N'Tổng hợp', 
+        GETDATE(), 
+        @IdCanBo
+    );
+
+    PRINT N'Báo cáo đã được khởi tạo.';
+END;
+GO
+	-- TEST CÂU 14:
+	/*EXEC pr_TaoBaoCaoDinhKy @IdCanBo = 1;
+	SELECT TOP 1 * FROM BaoCao ORDER BY IdBaoCao DESC;
+	GO*/
 --15. pr_XoaLichCu: Xóa các lịch làm việc đã qua hơn 1 năm để nhẹ database.
 GO
 CREATE PROC pr_XoaLichCu
@@ -1334,4 +1590,85 @@ BEGIN
     JOIN dbo.BacSi bs ON bs.IdBenhVien = m.IdBenhVien;
 END
 GO
+-- 5. TG_GhiLogTimKiem: Tự động tổng hợp từ khóa hot để phục vụ thống kê bác sĩ được quan tâm nhất.
+IF OBJECT_ID('dbo.ThongKeTimKiem', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ThongKeTimKiem (
+        TuKhoa NVARCHAR(255) PRIMARY KEY,
+        SoLuotTim INT DEFAULT 0,
+        NgayCapNhatCuoi DATETIME
+    );
+END
+GO
 
+CREATE OR ALTER TRIGGER dbo.TG_GhiLogTimKiem
+ON dbo.TimKiem
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Cập nhật số lượt tìm kiếm cho từ khóa vừa chèn
+    MERGE dbo.ThongKeTimKiem AS target
+    USING (SELECT TuKhoaTK FROM inserted) AS source
+    ON (target.TuKhoa = source.TuKhoaTK)
+    WHEN MATCHED THEN
+        UPDATE SET SoLuotTim = target.SoLuotTim + 1, NgayCapNhatCuoi = GETDATE()
+    WHEN NOT MATCHED THEN
+        INSERT (TuKhoa, SoLuotTim, NgayCapNhatCuoi)
+        VALUES (source.TuKhoaTK, 1, GETDATE());
+END
+GO
+	--TEST
+	/*INSERT INTO dbo.TimKiem (TuKhoaTK, ThoiGianTK, ViTriTimKiem, IdBenhNhan) 
+	VALUES (N'Bác sĩ Bửu', GETDATE(), N'Đà Nẵng', 1);
+
+	SELECT * FROM dbo.ThongKeTimKiem; -- Kiểm tra số lượt tìm tăng lên 1*/
+
+-- 6. TG_LuuLichSuThayDoiThongTin: Lưu vết thay đổi SĐT hoặc Email của Bác sĩ vào bảng Log_Changes.
+IF OBJECT_ID('dbo.Log_Changes', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Log_Changes (
+        IdLog INT IDENTITY PRIMARY KEY,
+        LoaiDoiTuong NVARCHAR(50), -- 'BACSI'
+        IdDoiTuong INT,
+        TenCot NVARCHAR(50),
+        GiaTriCu NVARCHAR(MAX),
+        GiaTriMoi NVARCHAR(MAX),
+        NgayThayDoi DATETIME DEFAULT GETDATE(),
+        NguoiThucHien NVARCHAR(100)
+    );
+END
+GO
+
+CREATE OR ALTER TRIGGER dbo.TG_LuuLichSuThayDoiThongTin
+ON dbo.BacSi
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Lưu lịch sử nếu đổi Số điện thoại
+    IF UPDATE(SoDienThoai)
+    BEGIN
+        INSERT INTO dbo.Log_Changes (LoaiDoiTuong, IdDoiTuong, TenCot, GiaTriCu, GiaTriMoi, NguoiThucHien)
+        SELECT N'BACSI', i.IdBacSi, N'SoDienThoai', d.SoDienThoai, i.SoDienThoai, SUSER_NAME()
+        FROM inserted i JOIN deleted d ON i.IdBacSi = d.IdBacSi
+        WHERE i.SoDienThoai <> d.SoDienThoai;
+    END
+
+    -- Lưu lịch sử nếu đổi Email
+    IF UPDATE(Email)
+    BEGIN
+        INSERT INTO dbo.Log_Changes (LoaiDoiTuong, IdDoiTuong, TenCot, GiaTriCu, GiaTriMoi, NguoiThucHien)
+        SELECT N'BACSI', i.IdBacSi, N'Email', d.Email, i.Email, SUSER_NAME()
+        FROM inserted i JOIN deleted d ON i.IdBacSi = d.IdBacSi
+        WHERE i.Email <> d.Email;
+    END
+END
+GO
+	--TEST
+	/*UPDATE dbo.BacSi 
+	SET SoDienThoai = '0123444559', Email = 'new_email@gmail.com' 
+	WHERE IdBacSi = 1;
+
+	SELECT * FROM dbo.Log_Changes; -- Kiểm tra bản ghi log cũ và mới*/
