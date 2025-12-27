@@ -481,5 +481,44 @@ GROUP BY b.IdBacSi, b.HoTen
 ORDER BY ThuHang ASC;
 
 -------------------------------------------------------------PROC---------------------------------------------------------------
+--15. pr_XoaLichCu: Xóa các lịch làm việc đã qua hơn 1 năm để nhẹ database.
+GO
+CREATE PROC pr_XoaLichCu
+AS
+BEGIN
+    DECLARE @SoLuongXoa INT
+    DELETE 
+    FROM LichLamViec
+    WHERE NgayLamViec<DATEADD(YEAR,-1,GETDATE())
+    SET @SoLuongXoa=@@ROWCOUNT
+    PRINT N'Đã xóa thành công '+CAST(@SoLuongXoa AS NVARCHAR)+' lich làm viec cũ!'
+END
+EXEC pr_XoaLichCu
+--16. pr_LayHoSoChiTietBacSi: Join nhiều bảng để lấy toàn bộ thông tin, bằng cấp, chuyên khoa của BS.
+GO
+CREATE PROC pr_LayHoSoChiTietBacSi
+    @idBacSi INT
+AS
+BEGIN
+    SELECT b.IdBacSi, b.HoTen, b.SoDienThoai, b.Email,dbo.fn_MaHoaMatKhauDonGian(b.MatKhau) AS MatKhauBaoMat,b.BangCap, b.NamKinhNghiem, b.ThanhTuu,bv.TenBenhVien,
+        b.soNhaTenDuong + ', ' + px.TenPhuongXa + ', ' + tt.TenTinhThanh AS DiaChi,
+        (SELECT STRING_AGG(ck.TenChuyenKhoa, ', ') 
+         FROM ChuyenKhoa_BacSi ckb 
+         JOIN ChuyenKhoa ck ON ckb.IdChuyenKhoa = ck.IdChuyenKhoa 
+         WHERE ckb.IdBacSi = b.IdBacSi) AS CacChuyenKhoa,
+         dbo.fn_ThongKeXepHangBacSi(b.IdBacSi) AS ThuHangHienTai
+    FROM BacSi b
+    JOIN BENHVIEN bv ON bv.IdBenhVien=b.IdBenhVien
+    JOIN PhuongXa px ON px.IdPhuongXa=b.IdPhuongXa
+    JOIN TinhThanh tt ON tt.IdTinhThanh=px.IdTinhThanh
+    WHERE b.IdBacSi=@idBacSi
+END
+GO
+EXEC pr_LayHoSoChiTietBacSi 1;
+--17. pr_GuiMailNhacLich: Trích xuất danh sách email bác sĩ có lịch vào ngày mai.
+
+--18. pr_PhanQuyenCanBo: Cập nhật chức vụ và quyền hạn cho Cán bộ.
+
+--19. pr_KhoaTaiKhoan: Khóa người dùng nếu có quá nhiều báo cáo vi phạm.
 
 -------------------------------------------------------------TRIGGER---------------------------------------------------------------
