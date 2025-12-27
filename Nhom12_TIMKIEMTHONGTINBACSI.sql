@@ -391,6 +391,148 @@ SET IDENTITY_INSERT BaoCao OFF;
 -------------------------------------------------------------SELECT---------------------------------------------------------------
 
 -------------------------------------------------------------FUNCTION---------------------------------------------------------------
+--1. fn_DinhDangSoDienThoai: Chuyển số điện thoại về định dạng chuẩn (vd: 090... -> +84...).
+IF OBJECT_ID('dbo.fn_DinhDangSoDienThoai', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_DinhDangSoDienThoai;
+GO
+CREATE FUNCTION dbo.fn_DinhDangSoDienThoai (@SoDienThoai VARCHAR(30))
+RETURNS VARCHAR(30)
+AS
+BEGIN
+    DECLARE @s VARCHAR(30);
+
+    IF @SoDienThoai IS NULL RETURN NULL;
+
+    SET @s = LTRIM(RTRIM(@SoDienThoai));
+
+    SET @s = REPLACE(@s, ' ', '');
+    SET @s = REPLACE(@s, '.', '');
+    SET @s = REPLACE(@s, '-', '');
+    SET @s = REPLACE(@s, '(', '');
+    SET @s = REPLACE(@s, ')', '');
+
+    IF @s = '' RETURN NULL;
+
+    IF LEFT(@s, 3) = '+84' RETURN @s;
+
+    IF LEFT(@s, 4) = '0084'
+        RETURN '+84' + SUBSTRING(@s, 5, 50);
+
+    IF LEFT(@s, 2) = '84'
+        RETURN '+84' + SUBSTRING(@s, 3, 50);
+
+    IF LEFT(@s, 1) = '0'
+        RETURN '+84' + SUBSTRING(@s, 2, 50);
+
+    IF LEFT(@s, 1) = '+' RETURN @s;
+
+    RETURN @s;
+END
+GO
+
+--2. fn_TinhTrungBinhSao: Tính điểm đánh giá trung bình của 1 bác sĩ.
+IF OBJECT_ID('dbo.fn_TinhTrungBinhSao', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_TinhTrungBinhSao;
+GO
+CREATE FUNCTION dbo.fn_TinhTrungBinhSao (@IdBacSi INT)
+RETURNS DECIMAL(4,2)
+AS
+BEGIN
+    DECLARE @avg DECIMAL(4,2);
+
+    SELECT @avg =
+        CAST(AVG(CAST(DiemDanhGia AS DECIMAL(10,2))) AS DECIMAL(4,2))
+    FROM dbo.DanhGia
+    WHERE IdBacSi = @IdBacSi;
+
+    RETURN ISNULL(@avg, 0.00);
+END
+GO
+
+--3. fn_DemBenhNhanTheoDoi: Đếm số lượng bệnh nhân đang theo dõi một bác sĩ cụ thể.
+IF OBJECT_ID('dbo.fn_DemBenhNhanTheoDoi', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_DemBenhNhanTheoDoi;
+GO
+CREATE FUNCTION dbo.fn_DemBenhNhanTheoDoi (@IdBacSi INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @cnt INT;
+
+    SELECT @cnt = COUNT(*)
+    FROM dbo.TheoDoi
+    WHERE IdBacSi = @IdBacSi;
+
+    RETURN ISNULL(@cnt, 0);
+END
+GO
+
+--4. fn_KiemTraLichTrong: Trả về 1 (True) nếu bác sĩ rảnh vào một khung giờ/ngày cụ thể.
+IF OBJECT_ID('dbo.fn_KiemTraLichTrong', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_KiemTraLichTrong;
+GO
+CREATE FUNCTION dbo.fn_KiemTraLichTrong
+(
+    @IdBacSi  INT,
+    @Ngay     DATE,
+    @KhungGio NVARCHAR(50)
+)
+RETURNS BIT
+AS
+BEGIN
+    DECLARE @kq BIT = 0;
+
+    IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.LichLamViec
+        WHERE IdBacSi    = @IdBacSi
+          AND NgayLamViec = @Ngay
+          AND KhungGio    = @KhungGio
+          AND TrangThai IN (N'Sẵn sàng', N'Rảnh', N'Trống', N'Available')
+    )
+    SET @kq = 1;
+
+    RETURN @kq;
+END
+GO
+
+--5. fn_LayDiaChiDayDuBacSi: Kết hợp Số nhà + Phường + Tỉnh thành thành 1 chuỗi.
+IF OBJECT_ID('dbo.fn_LayDiaChiDayDuBacSi', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_LayDiaChiDayDuBacSi;
+GO
+CREATE FUNCTION dbo.fn_LayDiaChiDayDuBacSi (@IdBacSi INT)
+RETURNS NVARCHAR(500)
+AS
+BEGIN
+    DECLARE @diachi NVARCHAR(500);
+
+    SELECT @diachi =
+        LTRIM(RTRIM(
+            COALESCE(NULLIF(bs.soNhaTenDuong, N''), N'')
+            + CASE
+                WHEN NULLIF(bs.soNhaTenDuong, N'') IS NOT NULL AND px.TenPhuongXa IS NOT NULL
+                    THEN N', '
+                ELSE N''
+              END
+            + COALESCE(px.TenPhuongXa, N'')
+            + CASE
+                WHEN (NULLIF(bs.soNhaTenDuong, N'') IS NOT NULL OR px.TenPhuongXa IS NOT NULL)
+                     AND tt.TenTinhThanh IS NOT NULL
+                    THEN N', '
+                ELSE N''
+              END
+            + COALESCE(tt.TenTinhThanh, N'')
+        ))
+    FROM dbo.BacSi bs
+    LEFT JOIN dbo.PhuongXa  px ON bs.IdPhuongXa = px.IdPhuongXa
+    LEFT JOIN dbo.TinhThanh tt ON px.IdTinhThanh = tt.IdTinhThanh
+    WHERE bs.IdBacSi = @IdBacSi;
+
+    RETURN NULLIF(@diachi, N'');
+END
+GO
+
 --15. fn_LayGioBatDau: Trích xuất giờ bắt đầu từ chuỗi KhungGio (ví dụ: "08:00 - 10:00").
 GO
 CREATE FUNCTION fn_LayGioBatDau(@khungGio NVARCHAR(50))
@@ -492,6 +634,7 @@ GROUP BY b.IdBacSi, b.HoTen
 ORDER BY ThuHang ASC;
 
 -------------------------------------------------------------PROC---------------------------------------------------------------
+<<<<<<< HEAD
 --15. pr_XoaLichCu: Xóa các lịch làm việc đã qua hơn 1 năm để nhẹ database.
 GO
 CREATE PROC pr_XoaLichCu
@@ -626,3 +769,466 @@ VALUES ('0905123456', N'Bác sĩ Trẻ', '2010-01-01', 1, 1);
 DELETE 
 FROM BACSI
 WHERE HoTen=N'Bác sĩ Trẻ'
+=======
+USE TimKiemThongTinBacSi;
+GO
+
+IF TYPE_ID(N'dbo.IdList') IS NULL
+    EXEC(N'CREATE TYPE dbo.IdList AS TABLE (Id INT NOT NULL PRIMARY KEY)');
+GO
+
+--1. pr_DangKyBacSi: Thêm mới bác sĩ kèm theo việc gán Chuyên khoa vào bảng trung gian.
+IF OBJECT_ID('dbo.pr_DangKyBacSi', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.pr_DangKyBacSi;
+GO
+CREATE PROCEDURE dbo.pr_DangKyBacSi
+(
+    @SoDienThoai       VARCHAR(15),
+    @HoTen             NVARCHAR(100),
+    @Email             VARCHAR(100),
+    @MatKhau           VARCHAR(255),
+    @NgaySinh          DATE = NULL,
+    @GioiTinh          NVARCHAR(10) = NULL,
+    @BangCap           NVARCHAR(100) = NULL,
+    @NamKinhNghiem     INT = NULL,
+    @ChungChiHanhNghe  NVARCHAR(255) = NULL,
+    @ThanhTuu          NVARCHAR(MAX) = NULL,
+    @MoTa              NVARCHAR(MAX) = NULL,
+    @AnhDaiDien        NVARCHAR(255) = NULL,
+    @SoNhaTenDuong     NVARCHAR(255) = NULL,
+    @CCCD              VARCHAR(20) = NULL,
+    @IdBenhVien        INT = NULL,
+    @IdPhuongXa        INT = NULL,
+    @ChuyenKhoaIds     dbo.IdList READONLY, 
+    @IdBacSiMoi        INT OUTPUT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        DECLARE @PhoneStd VARCHAR(30) = dbo.fn_DinhDangSoDienThoai(@SoDienThoai);
+
+        IF EXISTS (SELECT 1 FROM dbo.BacSi WHERE Email = @Email)
+            THROW 50001, N'Email bác sĩ đã tồn tại.', 1;
+
+        IF @CCCD IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.BacSi WHERE CCCD = @CCCD)
+            THROW 50002, N'CCCD bác sĩ đã tồn tại.', 1;
+
+        IF @PhoneStd IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.BacSi WHERE dbo.fn_DinhDangSoDienThoai(SoDienThoai) = @PhoneStd)
+            THROW 50003, N'Số điện thoại bác sĩ đã tồn tại.', 1;
+
+        INSERT INTO dbo.BacSi
+        (
+            SoDienThoai, HoTen, Email, MatKhau, NgaySinh, GioiTinh, BangCap, NamKinhNghiem,
+            ChungChiHanhNghe, ThanhTuu, MoTa, AnhDaiDien, soNhaTenDuong, CCCD, IdBenhVien, IdPhuongXa
+        )
+        VALUES
+        (
+            @PhoneStd, @HoTen, @Email, @MatKhau, @NgaySinh, @GioiTinh, @BangCap, @NamKinhNghiem,
+            @ChungChiHanhNghe, @ThanhTuu, @MoTa, @AnhDaiDien, @SoNhaTenDuong, @CCCD, @IdBenhVien, @IdPhuongXa
+        );
+
+        SET @IdBacSiMoi = SCOPE_IDENTITY();
+
+        INSERT INTO dbo.ChuyenKhoa_BacSi (IdBacSi, IdChuyenKhoa)
+        SELECT @IdBacSiMoi, ck.Id
+        FROM @ChuyenKhoaIds ck;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO
+
+
+--2. pr_CapNhatLichCongTac: Thay đổi hàng loạt trạng thái lịch làm việc.
+IF OBJECT_ID('dbo.pr_CapNhatLichCongTac', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.pr_CapNhatLichCongTac;
+GO
+CREATE PROCEDURE dbo.pr_CapNhatLichCongTac
+(
+    @IdBacSi       INT,
+    @NgayTu        DATE,
+    @NgayDen       DATE,
+    @TrangThaiMoi  NVARCHAR(50),
+    @KhungGio      NVARCHAR(50) = NULL
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @NgayTu IS NULL OR @NgayDen IS NULL OR @NgayTu > @NgayDen
+        THROW 50101, N'Khoảng ngày không hợp lệ.', 1;
+
+    UPDATE dbo.LichLamViec
+    SET TrangThai = @TrangThaiMoi
+    WHERE IdBacSi = @IdBacSi
+      AND NgayLamViec BETWEEN @NgayTu AND @NgayDen
+      AND (@KhungGio IS NULL OR KhungGio = @KhungGio);
+
+    SELECT @@ROWCOUNT AS SoDongDaCapNhat;
+END
+GO
+
+
+--3. pr_DatLichHen: (Nghiệp vụ quan trọng) Chèn dữ liệu vào bảng liên quan và kiểm tra xung đột lịch.
+IF OBJECT_ID('dbo.pr_DatLichHen', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.pr_DatLichHen;
+GO
+CREATE PROCEDURE dbo.pr_DatLichHen
+(
+    @IdBenhNhan  INT,
+    @IdBacSi     INT,
+    @Ngay        DATE,
+    @KhungGio    NVARCHAR(50),
+    @IdPhong     INT = NULL,
+    @GhiChu      NVARCHAR(500) = NULL
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdLichLamViec INT;
+    DECLARE @IdThongBao INT;
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        -- Validate FK tối thiểu
+        IF NOT EXISTS (SELECT 1 FROM dbo.BenhNhan WHERE IdBenhNhan = @IdBenhNhan)
+            THROW 50201, N'Bệnh nhân không tồn tại.', 1;
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.BacSi WHERE IdBacSi = @IdBacSi)
+            THROW 50202, N'Bác sĩ không tồn tại.', 1;
+
+        -- Tìm slot
+        SELECT TOP 1 @IdLichLamViec = IdLichLamViec
+        FROM dbo.LichLamViec
+        WHERE IdBacSi = @IdBacSi
+          AND NgayLamViec = @Ngay
+          AND KhungGio = @KhungGio
+          AND (@IdPhong IS NULL OR IdPhong = @IdPhong);
+
+        IF @IdLichLamViec IS NULL
+            THROW 50203, N'Không tồn tại lịch làm việc phù hợp để đặt.', 1;
+
+        -- Chốt lịch (atomic): chỉ đổi được nếu đang Sẵn sàng
+        UPDATE dbo.LichLamViec
+        SET TrangThai = N'Đã đặt'
+        WHERE IdLichLamViec = @IdLichLamViec
+          AND TrangThai = N'Sẵn sàng';
+
+        IF @@ROWCOUNT = 0
+            THROW 50204, N'Khung giờ không còn trống (đã đặt hoặc không sẵn sàng).', 1;
+
+        -- Tạo thông báo
+        INSERT INTO dbo.ThongBao (TieuDe, NoiDung, NgayGui, LoaiThongBao, IdCanBo)
+        VALUES
+        (
+            N'Xác nhận đặt lịch',
+            CONCAT(
+                N'Bệnh nhân #', @IdBenhNhan,
+                N' đã đặt lịch với bác sĩ #', @IdBacSi,
+                N' vào ', CONVERT(NVARCHAR(10), @Ngay, 120),
+                N' (', @KhungGio, N').',
+                CASE
+                    WHEN @GhiChu IS NULL OR LTRIM(RTRIM(@GhiChu)) = N'' THEN N''
+                    ELSE CONCAT(N' Ghi chú: ', @GhiChu)
+                END
+            ),
+            GETDATE(),
+            N'Lịch hẹn',
+            NULL
+        );
+
+        SET @IdThongBao = SCOPE_IDENTITY();
+
+        INSERT INTO dbo.ThongBao_BacSi (IdBacSi, IdThongBao, NgayXem, TrangThaiXem)
+        VALUES (@IdBacSi, @IdThongBao, NULL, N'Chưa xem');
+
+        INSERT INTO dbo.ThongBao_BenhNhan (IdBenhNhan, IdThongBao, NgayXem, TrangThaiXem)
+        VALUES (@IdBenhNhan, @IdThongBao, NULL, N'Chưa xem');
+
+        COMMIT;
+
+        SELECT
+            @IdLichLamViec AS IdLichLamViecDaDat,
+            @IdThongBao AS IdThongBaoDaTao;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO
+
+--4. pr_TimKiemThongMinh: Tìm bác sĩ theo Tên, Chuyên khoa, và Địa điểm đồng thời lưu vào TimKiem.
+IF OBJECT_ID('dbo.pr_TimKiemThongMinh', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.pr_TimKiemThongMinh;
+GO
+CREATE PROCEDURE dbo.pr_TimKiemThongMinh
+(
+    @TenBacSi      NVARCHAR(100) = NULL,
+    @IdChuyenKhoa  INT = NULL,
+    @IdTinhThanh   INT = NULL,
+    @IdPhuongXa    INT = NULL,
+    @IdBenhNhan    INT = NULL,
+    @ViTriTimKiem  NVARCHAR(255) = NULL
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- log tìm kiếm (IdBenhNhan có thể NULL)
+    DECLARE @TuKhoa NVARCHAR(255) =
+        LTRIM(RTRIM(CONCAT(
+            ISNULL(@TenBacSi, N''),
+            CASE WHEN @IdChuyenKhoa IS NULL THEN N'' ELSE CONCAT(N' | CK:', @IdChuyenKhoa) END,
+            CASE WHEN @IdPhuongXa IS NULL THEN N'' ELSE CONCAT(N' | PX:', @IdPhuongXa) END,
+            CASE WHEN @IdTinhThanh IS NULL THEN N'' ELSE CONCAT(N' | TT:', @IdTinhThanh) END
+        )));
+
+    INSERT INTO dbo.TimKiem (TuKhoaTK, ThoiGianTK, ViTriTimKiem, IdBenhNhan)
+    VALUES (@TuKhoa, GETDATE(), @ViTriTimKiem, @IdBenhNhan);
+
+    -- kết quả tìm kiếm
+    ;WITH CK AS
+    (
+        SELECT ckb.IdBacSi,
+               STRING_AGG(ck.TenChuyenKhoa, N', ') AS DanhSachChuyenKhoa
+        FROM dbo.ChuyenKhoa_BacSi ckb
+        JOIN dbo.ChuyenKhoa ck ON ck.IdChuyenKhoa = ckb.IdChuyenKhoa
+        GROUP BY ckb.IdBacSi
+    )
+    SELECT DISTINCT
+        bs.IdBacSi,
+        bs.HoTen,
+        dbo.fn_DinhDangSoDienThoai(bs.SoDienThoai) AS SoDienThoaiChuan,
+        bs.Email,
+        bv.TenBenhVien,
+        dbo.fn_LayDiaChiDayDuBacSi(bs.IdBacSi) AS DiaChiDayDu,
+        ISNULL(ck.DanhSachChuyenKhoa, N'') AS ChuyenKhoa,
+        dbo.fn_TinhTrungBinhSao(bs.IdBacSi) AS DiemTB,
+        dbo.fn_DemBenhNhanTheoDoi(bs.IdBacSi) AS SoNguoiTheoDoi
+    FROM dbo.BacSi bs
+    LEFT JOIN dbo.BenhVien bv ON bv.IdBenhVien = bs.IdBenhVien
+    LEFT JOIN dbo.PhuongXa px ON px.IdPhuongXa = bs.IdPhuongXa
+    LEFT JOIN CK ck ON ck.IdBacSi = bs.IdBacSi
+    WHERE
+        (@TenBacSi IS NULL OR bs.HoTen LIKE N'%' + @TenBacSi + N'%')
+        AND
+        (@IdChuyenKhoa IS NULL OR EXISTS
+            (
+                SELECT 1
+                FROM dbo.ChuyenKhoa_BacSi x
+                WHERE x.IdBacSi = bs.IdBacSi
+                  AND x.IdChuyenKhoa = @IdChuyenKhoa
+            )
+        )
+        AND
+        (
+            (@IdPhuongXa IS NULL AND @IdTinhThanh IS NULL)
+            OR (@IdPhuongXa IS NOT NULL AND bs.IdPhuongXa = @IdPhuongXa)
+            OR (@IdPhuongXa IS NULL AND @IdTinhThanh IS NOT NULL AND px.IdTinhThanh = @IdTinhThanh)
+        )
+    ORDER BY bs.HoTen;
+END
+GO
+
+--5. pr_DoiMatKhau: Kiểm tra mật khẩu cũ và cập nhật mật khẩu mới cho người dùng.
+IF OBJECT_ID('dbo.pr_DoiMatKhau', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.pr_DoiMatKhau;
+GO
+CREATE PROCEDURE dbo.pr_DoiMatKhau
+(
+    @LoaiNguoiDung NVARCHAR(20),  -- 'BACSI' | 'BENHNHAN' | 'CANBO'
+    @IdNguoiDung   INT,
+    @MatKhauCu     VARCHAR(255),
+    @MatKhauMoi    VARCHAR(255)
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @MatKhauMoi IS NULL OR LTRIM(RTRIM(@MatKhauMoi)) = ''
+        THROW 50301, N'Mật khẩu mới không hợp lệ.', 1;
+
+    IF UPPER(@LoaiNguoiDung) = 'BACSI'
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM dbo.BacSi WHERE IdBacSi = @IdNguoiDung AND MatKhau = @MatKhauCu)
+            THROW 50302, N'Mật khẩu cũ không đúng hoặc tài khoản không tồn tại.', 1;
+
+        UPDATE dbo.BacSi SET MatKhau = @MatKhauMoi WHERE IdBacSi = @IdNguoiDung;
+        SELECT 1 AS ThanhCong;
+        RETURN;
+    END
+
+    IF UPPER(@LoaiNguoiDung) = 'BENHNHAN'
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM dbo.BenhNhan WHERE IdBenhNhan = @IdNguoiDung AND MatKhau = @MatKhauCu)
+            THROW 50302, N'Mật khẩu cũ không đúng hoặc tài khoản không tồn tại.', 1;
+
+        UPDATE dbo.BenhNhan SET MatKhau = @MatKhauMoi WHERE IdBenhNhan = @IdNguoiDung;
+        SELECT 1 AS ThanhCong;
+        RETURN;
+    END
+
+    IF UPPER(@LoaiNguoiDung) = 'CANBO'
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM dbo.CanBoHanhChinh WHERE IdCanBo = @IdNguoiDung AND MatKhau = @MatKhauCu)
+            THROW 50302, N'Mật khẩu cũ không đúng hoặc tài khoản không tồn tại.', 1;
+
+        UPDATE dbo.CanBoHanhChinh SET MatKhau = @MatKhauMoi WHERE IdCanBo = @IdNguoiDung;
+        SELECT 1 AS ThanhCong;
+        RETURN;
+    END
+
+    THROW 50303, N'LoaiNguoiDung không hợp lệ. Dùng: BACSI | BENHNHAN | CANBO.', 1;
+END
+GO
+
+
+-------------------------------------------------------------TRIGGER---------------------------------------------------------------
+--3. TG_CapNhatTrangThaiLich: Khi một lịch khám (Appointment) được tạo thành công, trigger này tự động cập nhật trạng thái khung giờ đó của bác sĩ từ "Trống" sang "Đã đặt" để người sau không tìm thấy khung giờ đó nữa.
+IF OBJECT_ID(N'dbo.LichHen', N'U') IS NOT NULL
+BEGIN
+    EXEC(N'
+    CREATE OR ALTER TRIGGER dbo.TG_CapNhatTrangThaiLich
+    ON dbo.LichHen
+    AFTER INSERT
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM inserted i
+            LEFT JOIN dbo.LichLamViec llv
+              ON llv.IdBacSi = i.IdBacSi
+             AND llv.NgayLamViec = i.NgayHen
+             AND llv.KhungGio = i.KhungGio
+             AND (i.IdPhong IS NULL OR llv.IdPhong = i.IdPhong)
+             AND llv.TrangThai = N''Trống''
+            WHERE llv.IdLichLamViec IS NULL
+        )
+        BEGIN
+            THROW 51010, N''Khung giờ không còn trống hoặc không tồn tại trong lịch làm việc.'', 1;
+        END
+
+        UPDATE llv
+        SET llv.TrangThai = N''Đã đặt''
+        FROM dbo.LichLamViec llv
+        JOIN inserted i
+          ON llv.IdBacSi = i.IdBacSi
+         AND llv.NgayLamViec = i.NgayHen
+         AND llv.KhungGio = i.KhungGio
+         AND (i.IdPhong IS NULL OR llv.IdPhong = i.IdPhong)
+        WHERE llv.TrangThai = N''Trống'';
+    END
+    ');
+END
+ELSE
+BEGIN
+    PRINT N'Bỏ qua tạo TG_CapNhatTrangThaiLich vì chưa có bảng dbo.LichHen (Appointment).';
+END
+GO
+
+--4. TG_TuDongTaoThongBao: Khi Cán bộ cập nhật thông tin Bệnh viện (như đổi địa chỉ hoặc hotline), trigger này tự động chèn một bản ghi vào bảng ThongBao cho tất cả Bác sĩ thuộc bệnh viện đó biết.
+CREATE OR ALTER TRIGGER dbo.TG_TuDongTaoThongBao
+ON dbo.BenhVien
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdCanBo INT = TRY_CONVERT(INT, SESSION_CONTEXT(N'IdCanBo'));
+
+    -- Gom các bệnh viện có thay đổi thật sự vào bảng tạm
+    DECLARE @Changed TABLE
+    (
+        IdBenhVien INT PRIMARY KEY,
+        TenBenhVien NVARCHAR(200) NULL,
+
+        OldDiaDiem NVARCHAR(255) NULL, NewDiaDiem NVARCHAR(255) NULL,
+        OldHotLine VARCHAR(20)   NULL, NewHotLine VARCHAR(20)   NULL,
+        OldEmail   VARCHAR(100)  NULL, NewEmail   VARCHAR(100)  NULL,
+        OldMoTa    NVARCHAR(MAX) NULL, NewMoTa    NVARCHAR(MAX) NULL
+    );
+
+    INSERT INTO @Changed
+    (
+        IdBenhVien, TenBenhVien,
+        OldDiaDiem, NewDiaDiem,
+        OldHotLine, NewHotLine,
+        OldEmail,   NewEmail,
+        OldMoTa,    NewMoTa
+    )
+    SELECT
+        i.IdBenhVien,
+        i.TenBenhVien,
+        d.DiaDiem,  i.DiaDiem,
+        d.HotLine,  i.HotLine,
+        d.Email,    i.Email,
+        d.MoTa,     i.MoTa
+    FROM inserted i
+    JOIN deleted  d ON i.IdBenhVien = d.IdBenhVien
+    WHERE
+        ISNULL(i.DiaDiem, N'') <> ISNULL(d.DiaDiem, N'')
+     OR ISNULL(i.HotLine, '')  <> ISNULL(d.HotLine, '')
+     OR ISNULL(i.Email, '')    <> ISNULL(d.Email, '')
+     OR ISNULL(i.MoTa, N'')    <> ISNULL(d.MoTa, N'');
+
+    -- Không có thay đổi thì thoát
+    IF NOT EXISTS (SELECT 1 FROM @Changed)
+        RETURN;
+
+    DECLARE @Map TABLE
+    (
+        IdBenhVien INT NOT NULL,
+        IdThongBao INT NOT NULL
+    );
+
+    -- Tạo ThongBao: 1 bệnh viện đổi -> 1 thông báo
+    MERGE dbo.ThongBao AS tgt
+    USING
+    (
+        SELECT
+            c.IdBenhVien,
+            N'Cập nhật thông tin bệnh viện' AS TieuDe,
+            CONCAT(
+                N'Bệnh viện "', ISNULL(c.TenBenhVien, N''), N'" vừa được cập nhật.',
+                N' DiaDiem: "', ISNULL(c.OldDiaDiem, N''), N'" -> "', ISNULL(c.NewDiaDiem, N''), N'".',
+                N' HotLine: "', ISNULL(c.OldHotLine, ''),   N'" -> "', ISNULL(c.NewHotLine, ''),   N'".',
+                N' Email: "',   ISNULL(c.OldEmail, ''),     N'" -> "', ISNULL(c.NewEmail, ''),     N'".'
+            ) AS NoiDung,
+            GETDATE() AS NgayGui,
+            N'Bệnh viện' AS LoaiThongBao,
+            @IdCanBo AS IdCanBo
+        FROM @Changed c
+    ) AS src
+    ON 1 = 0
+    WHEN NOT MATCHED THEN
+        INSERT (TieuDe, NoiDung, NgayGui, LoaiThongBao, IdCanBo)
+        VALUES (src.TieuDe, src.NoiDung, src.NgayGui, src.LoaiThongBao, src.IdCanBo)
+    OUTPUT src.IdBenhVien, inserted.IdThongBao
+    INTO @Map (IdBenhVien, IdThongBao);
+
+    -- Gán thông báo cho tất cả bác sĩ thuộc bệnh viện đó
+    INSERT INTO dbo.ThongBao_BacSi (IdBacSi, IdThongBao, NgayXem, TrangThaiXem)
+    SELECT
+        bs.IdBacSi,
+        m.IdThongBao,
+        NULL,
+        N'Chưa xem'
+    FROM @Map m
+    JOIN dbo.BacSi bs ON bs.IdBenhVien = m.IdBenhVien;
+END
+GO
+>>>>>>> 02a757e8e8135e01b5b155e422fbca37cb405f0a
