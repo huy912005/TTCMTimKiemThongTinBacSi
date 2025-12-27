@@ -380,6 +380,148 @@ SET IDENTITY_INSERT BaoCao OFF;
 -------------------------------------------------------------SELECT---------------------------------------------------------------
 
 -------------------------------------------------------------FUNCTION---------------------------------------------------------------
+--1. fn_DinhDangSoDienThoai: Chuyển số điện thoại về định dạng chuẩn (vd: 090... -> +84...).
+IF OBJECT_ID('dbo.fn_DinhDangSoDienThoai', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_DinhDangSoDienThoai;
+GO
+CREATE FUNCTION dbo.fn_DinhDangSoDienThoai (@SoDienThoai VARCHAR(30))
+RETURNS VARCHAR(30)
+AS
+BEGIN
+    DECLARE @s VARCHAR(30);
+
+    IF @SoDienThoai IS NULL RETURN NULL;
+
+    SET @s = LTRIM(RTRIM(@SoDienThoai));
+
+    SET @s = REPLACE(@s, ' ', '');
+    SET @s = REPLACE(@s, '.', '');
+    SET @s = REPLACE(@s, '-', '');
+    SET @s = REPLACE(@s, '(', '');
+    SET @s = REPLACE(@s, ')', '');
+
+    IF @s = '' RETURN NULL;
+
+    IF LEFT(@s, 3) = '+84' RETURN @s;
+
+    IF LEFT(@s, 4) = '0084'
+        RETURN '+84' + SUBSTRING(@s, 5, 50);
+
+    IF LEFT(@s, 2) = '84'
+        RETURN '+84' + SUBSTRING(@s, 3, 50);
+
+    IF LEFT(@s, 1) = '0'
+        RETURN '+84' + SUBSTRING(@s, 2, 50);
+
+    IF LEFT(@s, 1) = '+' RETURN @s;
+
+    RETURN @s;
+END
+GO
+
+--2. fn_TinhTrungBinhSao: Tính điểm đánh giá trung bình của 1 bác sĩ.
+IF OBJECT_ID('dbo.fn_TinhTrungBinhSao', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_TinhTrungBinhSao;
+GO
+CREATE FUNCTION dbo.fn_TinhTrungBinhSao (@IdBacSi INT)
+RETURNS DECIMAL(4,2)
+AS
+BEGIN
+    DECLARE @avg DECIMAL(4,2);
+
+    SELECT @avg =
+        CAST(AVG(CAST(DiemDanhGia AS DECIMAL(10,2))) AS DECIMAL(4,2))
+    FROM dbo.DanhGia
+    WHERE IdBacSi = @IdBacSi;
+
+    RETURN ISNULL(@avg, 0.00);
+END
+GO
+
+--3. fn_DemBenhNhanTheoDoi: Đếm số lượng bệnh nhân đang theo dõi một bác sĩ cụ thể.
+IF OBJECT_ID('dbo.fn_DemBenhNhanTheoDoi', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_DemBenhNhanTheoDoi;
+GO
+CREATE FUNCTION dbo.fn_DemBenhNhanTheoDoi (@IdBacSi INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @cnt INT;
+
+    SELECT @cnt = COUNT(*)
+    FROM dbo.TheoDoi
+    WHERE IdBacSi = @IdBacSi;
+
+    RETURN ISNULL(@cnt, 0);
+END
+GO
+
+--4. fn_KiemTraLichTrong: Trả về 1 (True) nếu bác sĩ rảnh vào một khung giờ/ngày cụ thể.
+IF OBJECT_ID('dbo.fn_KiemTraLichTrong', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_KiemTraLichTrong;
+GO
+CREATE FUNCTION dbo.fn_KiemTraLichTrong
+(
+    @IdBacSi  INT,
+    @Ngay     DATE,
+    @KhungGio NVARCHAR(50)
+)
+RETURNS BIT
+AS
+BEGIN
+    DECLARE @kq BIT = 0;
+
+    IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.LichLamViec
+        WHERE IdBacSi    = @IdBacSi
+          AND NgayLamViec = @Ngay
+          AND KhungGio    = @KhungGio
+          AND TrangThai IN (N'Sẵn sàng', N'Rảnh', N'Trống', N'Available')
+    )
+    SET @kq = 1;
+
+    RETURN @kq;
+END
+GO
+
+--5. fn_LayDiaChiDayDuBacSi: Kết hợp Số nhà + Phường + Tỉnh thành thành 1 chuỗi.
+IF OBJECT_ID('dbo.fn_LayDiaChiDayDuBacSi', 'FN') IS NOT NULL
+    DROP FUNCTION dbo.fn_LayDiaChiDayDuBacSi;
+GO
+CREATE FUNCTION dbo.fn_LayDiaChiDayDuBacSi (@IdBacSi INT)
+RETURNS NVARCHAR(500)
+AS
+BEGIN
+    DECLARE @diachi NVARCHAR(500);
+
+    SELECT @diachi =
+        LTRIM(RTRIM(
+            COALESCE(NULLIF(bs.soNhaTenDuong, N''), N'')
+            + CASE
+                WHEN NULLIF(bs.soNhaTenDuong, N'') IS NOT NULL AND px.TenPhuongXa IS NOT NULL
+                    THEN N', '
+                ELSE N''
+              END
+            + COALESCE(px.TenPhuongXa, N'')
+            + CASE
+                WHEN (NULLIF(bs.soNhaTenDuong, N'') IS NOT NULL OR px.TenPhuongXa IS NOT NULL)
+                     AND tt.TenTinhThanh IS NOT NULL
+                    THEN N', '
+                ELSE N''
+              END
+            + COALESCE(tt.TenTinhThanh, N'')
+        ))
+    FROM dbo.BacSi bs
+    LEFT JOIN dbo.PhuongXa  px ON bs.IdPhuongXa = px.IdPhuongXa
+    LEFT JOIN dbo.TinhThanh tt ON px.IdTinhThanh = tt.IdTinhThanh
+    WHERE bs.IdBacSi = @IdBacSi;
+
+    RETURN NULLIF(@diachi, N'');
+END
+GO
+
 --15. fn_LayGioBatDau: Trích xuất giờ bắt đầu từ chuỗi KhungGio (ví dụ: "08:00 - 10:00").
 GO
 CREATE FUNCTION fn_LayGioBatDau(@khungGio NVARCHAR(50))
