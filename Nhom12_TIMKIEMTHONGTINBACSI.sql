@@ -378,6 +378,44 @@ VALUES (1, N'Báo cáo lượt tìm kiếm tháng 12', N'Thống kê', GETDATE()
 (3, N'Phản hồi từ bệnh nhân về dịch vụ', N'Góp ý', GETDATE(), 3, 3, 3);
 SET IDENTITY_INSERT BaoCao OFF;
 -------------------------------------------------------------SELECT---------------------------------------------------------------
+--danh sách bác sĩ bị báo cáo
+SELECT DISTINCT
+    BS.IdBacSi,
+    BS.HoTen,
+    BS.SoDienThoai,
+    BS.Email,
+    COUNT(BC.IdBaoCao) OVER (PARTITION BY BS.IdBacSi) AS SoLanBiBaoCao
+FROM BaoCao BC
+JOIN BacSi BS ON BC.IdBacSi = BS.IdBacSi
+WHERE BC.IdBacSi IS NOT NULL;
+--bác sĩ bị báo cáo nhiều nhất
+SELECT TOP 1
+    BS.IdBacSi,
+    BS.HoTen,
+    COUNT(BC.IdBaoCao) AS SoLanBiBaoCao
+FROM BaoCao BC
+JOIN BacSi BS ON BC.IdBacSi = BS.IdBacSi
+GROUP BY BS.IdBacSi, BS.HoTen
+ORDER BY SoLanBiBaoCao DESC;
+--danh sách bệnh nhân báo cáo
+SELECT DISTINCT
+    BN.IdBenhNhan,
+    BN.HoTen,
+    BN.SoDienThoai,
+    BN.Email,
+    COUNT(BC.IdBaoCao) OVER (PARTITION BY BN.IdBenhNhan) AS SoLanBaoCao
+FROM BaoCao BC
+JOIN BenhNhan BN ON BC.IdeBenhNhan = BN.IdBenhNhan
+WHERE BC.IdeBenhNhan IS NOT NULL;
+--bệnh nhân báo cáo nhiều nhất
+SELECT TOP 1
+    BN.IdBenhNhan,
+    BN.HoTen,
+    COUNT(BC.IdBaoCao) AS SoLanBaoCao
+FROM BaoCao BC
+JOIN BenhNhan BN ON BC.IdeBenhNhan = BN.IdBenhNhan
+GROUP BY BN.IdBenhNhan, BN.HoTen
+ORDER BY SoLanBaoCao DESC;
 
 -------------------------------------------------------------FUNCTION---------------------------------------------------------------
 --15. fn_LayGioBatDau: Trích xuất giờ bắt đầu từ chuỗi KhungGio (ví dụ: "08:00 - 10:00").
@@ -481,5 +519,95 @@ GROUP BY b.IdBacSi, b.HoTen
 ORDER BY ThuHang ASC;
 
 -------------------------------------------------------------PROC---------------------------------------------------------------
+---Bổ sung cột soft delete
+ALTER TABLE BenhNhan
+ADD IsDeleted BIT DEFAULT 0;
+GO
+---6.pr_XoaTaiKhoanAnToan
+CREATE PROC pr_XoaTaiKhoanAnToan
+    @IdBenhNhan INT
+AS
+BEGIN
+    SET NOCOUNT ON;
 
+    IF NOT EXISTS (SELECT 1 FROM BenhNhan WHERE IdBenhNhan = @IdBenhNhan)
+    BEGIN
+        RAISERROR (N'Bệnh nhân không tồn tại', 16, 1);
+        RETURN;
+    END
+
+    -- Soft delete
+    UPDATE BenhNhan
+    SET IsDeleted = 1
+    WHERE IdBenhNhan = @IdBenhNhan;
+
+    -- Không xóa BaoCao, DanhGia, TimKiem để giữ lịch sử
+END;
+GO
+---7.pr_ThongKeTuKhoaHot
+CREATE PROC pr_GuiThongBaoHeThong
+    @TieuDe NVARCHAR(255),
+    @NoiDung NVARCHAR(MAX),
+    @LoaiThongBao NVARCHAR(100),
+    @IdCanBo INT,
+    @IdBenhVien INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdThongBao INT;
+
+    -- Tạo thông báo
+    INSERT INTO ThongBao (TieuDe, NoiDung, NgayGui, LoaiThongBao, IdCanBo)
+    VALUES (@TieuDe, @NoiDung, GETDATE(), @LoaiThongBao, @IdCanBo);
+
+    SET @IdThongBao = SCOPE_IDENTITY();
+
+    -- Gửi cho toàn bộ bác sĩ trong bệnh viện
+    INSERT INTO ThongBao_BacSi (IdBacSi, IdThongBao, TrangThaiXem)
+    SELECT IdBacSi, @IdThongBao, N'Chưa xem'
+    FROM BacSi
+    WHERE IdBenhVien = @IdBenhVien;
+END;
+GO
+---8.pr_ThongKeTuKhoaHot
+CREATE PROC pr_ThongKeTuKhoaHot
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 10
+        TuKhoaTK,
+        COUNT(*) AS SoLanTim
+    FROM TimKiem
+    WHERE ThoiGianTK >= DATEADD(DAY, -7, GETDATE())
+    GROUP BY TuKhoaTK
+    ORDER BY SoLanTim DESC;
+END;
+GO
+---9.pr_TuDongPhanPhong
+CREATE PROC pr_TuDongPhanPhong
+    @NgayLamViec DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO LichLamViec (NgayLamViec, KhungGio, TrangThai, IdBacSi, IdPhong)
+    SELECT
+        @NgayLamViec,
+        N'Sáng',
+        N'Đã phân',
+        BS.IdBacSi,
+        P.IdPhong
+    FROM Phong P
+    JOIN Khu K ON P.IdKhu = K.IdKhu
+    JOIN BenhVien BV ON K.IdBenhVien = BV.IdBenhVien
+    JOIN BacSi BS ON BS.IdBenhVien = BV.IdBenhVien
+    WHERE NOT EXISTS (
+        SELECT 1 FROM LichLamViec L
+        WHERE L.IdPhong = P.IdPhong
+        AND L.NgayLamViec = @NgayLamViec
+    );
+END;
+GO
 -------------------------------------------------------------TRIGGER---------------------------------------------------------------
