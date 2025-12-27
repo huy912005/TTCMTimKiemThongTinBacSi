@@ -845,8 +845,6 @@ BEGIN
     END CATCH
 END
 GO
-
-
 --2. pr_CapNhatLichCongTac: Thay đổi hàng loạt trạng thái lịch làm việc.
 IF OBJECT_ID('dbo.pr_CapNhatLichCongTac', 'P') IS NOT NULL
     DROP PROCEDURE dbo.pr_CapNhatLichCongTac;
@@ -875,8 +873,6 @@ BEGIN
     SELECT @@ROWCOUNT AS SoDongDaCapNhat;
 END
 GO
-
-
 --3. pr_DatLichHen: (Nghiệp vụ quan trọng) Chèn dữ liệu vào bảng liên quan và kiểm tra xung đột lịch.
 IF OBJECT_ID('dbo.pr_DatLichHen', 'P') IS NOT NULL
     DROP PROCEDURE dbo.pr_DatLichHen;
@@ -967,7 +963,6 @@ BEGIN
     END CATCH
 END
 GO
-
 --4. pr_TimKiemThongMinh: Tìm bác sĩ theo Tên, Chuyên khoa, và Địa điểm đồng thời lưu vào TimKiem.
 IF OBJECT_ID('dbo.pr_TimKiemThongMinh', 'P') IS NOT NULL
     DROP PROCEDURE dbo.pr_TimKiemThongMinh;
@@ -1040,7 +1035,6 @@ BEGIN
     ORDER BY bs.HoTen;
 END
 GO
-
 --5. pr_DoiMatKhau: Kiểm tra mật khẩu cũ và cập nhật mật khẩu mới cho người dùng.
 IF OBJECT_ID('dbo.pr_DoiMatKhau', 'P') IS NOT NULL
     DROP PROCEDURE dbo.pr_DoiMatKhau;
@@ -1089,11 +1083,9 @@ BEGIN
         RETURN;
     END
 
-    THROW 50303, N'LoaiNguoiDung không hợp lệ. Dùng: BACSI | BENHNHAN | CANBO.', 1;
+    --THROW 50303, N'LoaiNguoiDung không hợp lệ. Dùng: BACSI | BENHNHAN | CANBO.', 1;
 END
 GO
-
-
 -------------------------------------------------------------TRIGGER---------------------------------------------------------------
 --3. TG_CapNhatTrangThaiLich: Khi một lịch khám (Appointment) được tạo thành công, trigger này tự động cập nhật trạng thái khung giờ đó của bác sĩ từ "Trống" sang "Đã đặt" để người sau không tìm thấy khung giờ đó nữa.
 IF OBJECT_ID(N'dbo.LichHen', N'U') IS NOT NULL
