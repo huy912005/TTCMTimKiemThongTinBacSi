@@ -194,7 +194,66 @@ CREATE TABLE BaoCao (
     FOREIGN KEY (IdeBenhNhan) REFERENCES BenhNhan(IdBenhNhan)
 );
 -------------------------------------------------------------CONSTRAINT---------------------------------------------------------------
-
+--------------------------------SDT-------------
+--bang benh nhan
+ALTER TABLE BENHNHAN
+	ADD CONSTRAINT CK_BENHNHAN_SDT
+		CHECK(SoDienThoai LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'OR
+				SoDienThoai LIKE'[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+--bang bac si
+ALTER TABLE BACSI
+	ADD CONSTRAINT CK_BACSI_SDT
+		CHECK(SoDienThoai LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'OR
+				SoDienThoai LIKE'[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+--bang can bo hanh chinh
+ALTER TABLE CanBoHanhChinh
+	ADD CONSTRAINT CK_CANBOHC_SDT
+		CHECK(SoDienThoai LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'OR
+				SoDienThoai LIKE'[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+--bang can bo benh vien
+ALTER TABLE BenhVien
+	ADD CONSTRAINT CK_BENHVIEN_SDT
+		CHECK(HotLine LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'OR
+				HotLine LIKE'[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+--------------------------------EMAIL-------------
+--bang benh nhan
+ALTER TABLE BENHNHAN
+	ADD CONSTRAINT CK_BENHNHAN_EMAIL
+		CHECK(Email LIKE '[A-Z]%@%_')
+--bang bac si
+ALTER TABLE BACSI
+	ADD CONSTRAINT CK_BACSI_EMAIL
+		CHECK(Email LIKE '[A-Z]%@%_')
+--bang can bo hanh chinh
+ALTER TABLE CanBoHanhChinh
+	ADD CONSTRAINT CK_CANBOHC_EMAIL
+		CHECK(Email LIKE '[A-Z]%@%_')
+--bang benh vien
+ALTER TABLE BenhVien
+	ADD CONSTRAINT CK_BenhVien_EMAIL
+		CHECK(Email LIKE '[A-Z]%@%_')
+--------------------------------GIỚI TÍNH-------------
+--bang benh nhan
+ALTER TABLE BENHNHAN
+	ADD CONSTRAINT CK_BENHNHAN_GT
+	CHECK(GIOITINH IN('NAM',N'NỮ'))
+--giới tính mặc định bảng benh nhan
+ALTER TABLE BENHNHAN
+	ADD CONSTRAINT DF_BENHNHAN_GIOITINH DEFAULT N'NAM' FOR GIOITINH
+--bang bac si
+ALTER TABLE BACSI
+	ADD CONSTRAINT CK_BACSI_GT
+	CHECK(GIOITINH IN('NAM',N'NỮ'))
+--giới tính mặc định bảng bac si
+ALTER TABLE BACSI
+	ADD CONSTRAINT DF_BACSI_GIOITINH DEFAULT N'NAM' FOR GIOITINH
+--bang can bo hanh chinh
+ALTER TABLE CanBoHanhChinh
+	ADD CONSTRAINT CK_CANBOHC_GT
+	CHECK(GIOITINH IN('NAM',N'NỮ'))
+--giới tính mặc định bảng CBHC
+ALTER TABLE CanBoHanhChinh
+	ADD CONSTRAINT DF_CANBOHC_GIOITINH DEFAULT N'NAM' FOR GIOITINH
 -------------------------------------------------------------INSERT---------------------------------------------------------------
 -- 1. TỈNH THÀNH
 SET IDENTITY_INSERT TinhThanh ON;
@@ -250,9 +309,9 @@ SET IDENTITY_INSERT BenhNhan OFF;
 -- 8. CÁN BỘ HÀNH CHÍNH
 SET IDENTITY_INSERT CanBoHanhChinh ON;
 INSERT INTO CanBoHanhChinh (IdCanBo, SoDienThoai, HoTen, Email, MatKhau, NgaySinh, GioiTinh, ChucVu, soNhaTenDuong, CCCD, IdBenhVien, IdPhuongXa) 
-VALUES (1, '0236111', N'Phạm Minh Huy', 'Huy@vn', 'Huy123!@#', '1975-01-01', N'Nam', N'Trưởng phòng IT', N'124 Hải Phòng', '049100111222', 1, 1),
-(2, '0236222', N'Minh Huy Phạm', 'MHuy2@vn', '123', '1988-12-12', N'Nam', N'Nhân viên nhân sự', N'20 Võ Nguyên Giáp', '049100333444', 2, 2),
-(3, '0236333', N'Trần Tiếp Tân', 'tieptan@vn', '123', '1992-06-06', N'Nữ', N'Nhân viên điều phối', N'10 Hòa Khánh', '049100555666', 3, 3);
+VALUES (1, '0236111987', N'Phạm Minh Huy', 'Huy@vn', 'Huy123!@#', '1975-01-01', N'Nam', N'Trưởng phòng IT', N'124 Hải Phòng', '049100111222', 1, 1),
+(2, '0236222987', N'Minh Huy Phạm', 'MHuy2@vn', '123', '1988-12-12', N'Nam', N'Nhân viên nhân sự', N'20 Võ Nguyên Giáp', '049100333444', 2, 2),
+(3, '0236333098', N'Trần Tiếp Tân', 'tieptan@vn', '123', '1992-06-06', N'Nữ', N'Nhân viên điều phối', N'10 Hòa Khánh', '049100555666', 3, 3);
 SET IDENTITY_INSERT CanBoHanhChinh OFF;
 -- 9. CHUYÊN KHOA
 SET IDENTITY_INSERT ChuyenKhoa ON;
