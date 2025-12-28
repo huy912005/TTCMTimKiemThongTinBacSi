@@ -499,8 +499,6 @@ JOIN BaoCao bc ON bn.IdBenhNhan = bc.IdeBenhNhan
 GROUP BY bn.IdBenhNhan, bn.HoTen
 ORDER BY SoLuotDaBaoCao DESC;
 -------------------------------------------------------------FUNCTION---------------------------------------------------------------
-
-=======
 -- Select theo IdBacSi
 SELECT * FROM BacSi WHERE IdBacSi = 1;
 -- Select theo Tên (Tìm gần đúng)
@@ -1038,8 +1036,6 @@ FROM BacSi b
 JOIN DanhGia d ON b.IdBacSi = d.IdBacSi
 GROUP BY b.IdBacSi, b.HoTen
 ORDER BY ThuHang ASC;
->>>>>>> develop
-
 -------------------------------------------------------------PROC---------------------------------------------------------------
 GO
 USE TimKiemThongTinBacSi;
