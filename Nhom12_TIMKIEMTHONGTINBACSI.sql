@@ -1290,6 +1290,94 @@ BEGIN
     --THROW 50303, N'LoaiNguoiDung không hợp lệ. Dùng: BACSI | BENHNHAN | CANBO.', 1;
 END
 GO
+--6.pr_XoaTaiKhoanAnToan (Soft Delete)
+CREATE PROCEDURE pr_XoaTaiKhoanAnToan
+    @IdBenhNhan INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Kiểm tra bệnh nhân có tồn tại không
+    IF EXISTS (SELECT 1 FROM BenhNhan WHERE IdBenhNhan = @IdBenhNhan)
+    BEGIN
+        UPDATE BenhNhan 
+        SET TrangThai = 0 
+        WHERE IdBenhNhan = @IdBenhNhan;
+        
+        PRINT N'Đã chuyển trạng thái bệnh nhân sang 0 (Xóa mềm). Dữ liệu lịch sử báo cáo vẫn an toàn.';
+    END
+    ELSE
+        PRINT N'Không tìm thấy ID bệnh nhân này.';
+END;
+GO
+--7.pr_GuiThongBaoHeThong
+CREATE PROCEDURE pr_GuiThongBaoHeThong
+    @IdCanBo INT,
+    @IdBenhVien INT,
+    @TieuDe NVARCHAR(255),
+    @NoiDung NVARCHAR(MAX),
+    @LoaiThongBao NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @NewIdThongBao INT;
+
+    -- 1. Tạo thông báo chính
+    INSERT INTO ThongBao (TieuDe, NoiDung, NgayGui, LoaiThongBao, IdCanBo)
+    VALUES (@TieuDe, @NoiDung, GETDATE(), @LoaiThongBao, @IdCanBo);
+
+    SET @NewIdThongBao = SCOPE_IDENTITY();
+
+    -- 2. Gửi cho tất cả bác sĩ thuộc bệnh viện được chọn
+    INSERT INTO ThongBao_BacSi (IdBacSi, IdThongBao, TrangThaiXem)
+    SELECT IdBacSi, @NewIdThongBao, N'Chưa xem'
+    FROM BacSi
+    WHERE IdBenhVien = @IdBenhVien;
+END;
+GO
+--8.pr_ThongKeTuKhoaHot
+CREATE PROCEDURE pr_ThongKeTuKhoaHot
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT TOP 10 
+        TuKhoaTK, 
+        COUNT(IdTimKiem) AS SoLuotTim
+    FROM TimKiem
+    WHERE ThoiGianTK >= DATEADD(DAY, -7, GETDATE())
+    GROUP BY TuKhoaTK
+    ORDER BY SoLuotTim DESC;
+END;
+GO
+--9.pr_TuDongPhanPhong
+CREATE PROCEDURE pr_TuDongPhanPhong
+    @NgayLamViec DATE,
+    @KhungGio NVARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Gán bác sĩ chưa có lịch vào các phòng trống thuộc bệnh viện họ đang làm
+    INSERT INTO LichLamViec (NgayLamViec, KhungGio, TrangThai, IdBacSi, IdPhong)
+    SELECT 
+        @NgayLamViec, 
+        @KhungGio, 
+        N'Sẵn sàng', 
+        B.IdBacSi, 
+        (SELECT TOP 1 P.IdPhong 
+         FROM Phong P 
+         INNER JOIN Khu K ON P.IdKhu = K.IdKhu 
+         WHERE K.IdBenhVien = B.IdBenhVien
+         AND P.IdPhong NOT IN (
+            SELECT IdPhong FROM LichLamViec 
+            WHERE NgayLamViec = @NgayLamViec AND KhungGio = @KhungGio
+         ))
+    FROM BacSi B
+    WHERE B.IdBacSi NOT IN (
+        SELECT IdBacSi FROM LichLamViec 
+        WHERE NgayLamViec = @NgayLamViec AND KhungGio = @KhungGio
+    );
+END;
+GO
 -- 10. pr_ImportDanhSachPhuongXa: Thêm hàng loạt dữ liệu địa chính từ bảng tạm
 GO
 CREATE OR ALTER PROC pr_ImportDanhSachPhuongXa
