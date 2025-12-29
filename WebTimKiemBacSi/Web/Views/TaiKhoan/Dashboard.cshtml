@@ -1,0 +1,166 @@
+﻿@using WebTimKiemBacSi.Models
+@model IEnumerable<ThongKeTimKiem>
+@{
+    ViewData["Title"] = "Dashboard Thống Kê";
+    Layout = "_AdminLayout";
+}
+
+<style>
+    .card-stat {
+        border: none;
+        border-radius: 15px;
+        transition: transform 0.3s;
+    }
+
+        .card-stat:hover {
+            transform: translateY(-5px);
+        }
+</style>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card card-stat bg-primary text-white shadow-sm h-100">
+            <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-white-50 small mb-1 text-uppercase">Tổng Bác sĩ</p>
+                    <h2 class="mb-0 fw-bold">@ViewBag.TotalBacSi</h2>
+                </div>
+                <i class="bi bi-person-badge fs-1 opacity-25"></i>
+            </div>
+            <a asp-controller="BacSi" asp-action="Index" class="card-footer bg-black bg-opacity-10 border-0 text-white text-decoration-none small text-center">
+                Xem chi tiết <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-stat bg-success text-white shadow-sm h-100">
+            <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-white-50 small mb-1 text-uppercase">Tổng Bệnh nhân</p>
+                    <h2 class="mb-0 fw-bold">@ViewBag.TotalBenhNhan</h2>
+                </div>
+                <i class="bi bi-people fs-1 opacity-25"></i>
+            </div>
+            <a asp-controller="TaiKhoan" asp-action="QuanLyBenhNhan" class="card-footer bg-black bg-opacity-10 border-0 text-white text-decoration-none small text-center">
+                Xem chi tiết <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-stat bg-info text-white shadow-sm h-100">
+            <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-white-50 small mb-1 text-uppercase">Lượt tìm kiếm</p>
+                    <h2 class="mb-0 fw-bold">@ViewBag.TotalTimKiem</h2>
+                </div>
+                <i class="bi bi-search fs-1 opacity-25"></i>
+            </div>
+            <div class="card-footer bg-black bg-opacity-10 border-0 small text-center">
+                Cập nhật: @DateTime.Now.ToString("dd/MM/yyyy")
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="fw-bold mb-0 text-dark">Top 10 Từ khóa tìm kiếm nhiều nhất</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="searchChart" style="min-height: 350px;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="fw-bold mb-0 text-dark">Chi tiết xu hướng</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th class="ps-4">Từ khóa</th>
+                                <th class="text-end pe-4">Lượt tìm</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-semibold small text-dark">@item.TuKhoa</td>
+                                    <td class="text-end pe-4"><span class="badge bg-primary-subtle text-primary">@item.SoLuotTim</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGuiThongBao" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white border-0 py-3">
+                <h5 class="modal-title fw-bold"><i class="bi bi-send-fill me-2"></i>Gửi thông báo tới Bác sĩ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="GuiThongBao" method="post">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Tiêu đề thông báo</label>
+                        <input type="text" name="TieuDe" class="form-control rounded-pill" placeholder="Nhập tiêu đề..." required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Loại thông báo</label>
+                        <select name="LoaiThongBao" class="form-select rounded-pill">
+                            <option value="Hệ thống">Hệ thống</option>
+                            <option value="Khẩn cấp">Khẩn cấp</option>
+                            <option value="Nhắc nhở">Nhắc nhở</option>
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-bold small">Nội dung chi tiết</label>
+                        <textarea name="NoiDung" class="form-control rounded-4" rows="4" placeholder="Nhập nội dung..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 shadow-sm">Xác nhận gửi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('searchChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.Select(m => m.TuKhoa))),
+                datasets: [{
+                    label: 'Số lượt tìm kiếm',
+                    data: @Html.Raw(Json.Serialize(Model.Select(m => m.SoLuotTim))),
+                    backgroundColor: 'rgba(56, 189, 248, 0.7)',
+                    borderColor: '#0ea5e9',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    </script>
+}
