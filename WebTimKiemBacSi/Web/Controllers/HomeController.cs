@@ -38,7 +38,7 @@ namespace Web.Controllers
                     tenchuyenKhoa=_db.ChuyenKhoa.FirstOrDefault(ck => ck.IdChuyenKhoa == chuyenKhoa.Value)?.TenChuyenKhoa ?? "";
                 if (benhVien.HasValue && benhVien.Value > 0)
                     tenBenhVien=_db.BenhVien.FirstOrDefault(bv => bv.IdBenhVien == benhVien.Value)?.TenBenhVien ?? "";
-                string tuKhoaTK=tenBS + " " + tenchuyenKhoa;
+                string tuKhoaTK=tenBS + " " + tenchuyenKhoa+ " "+tenBenhVien;
                 var lichSuTimKiem = new TimKiem
                 {
                     TuKhoaTK = tuKhoaTK,

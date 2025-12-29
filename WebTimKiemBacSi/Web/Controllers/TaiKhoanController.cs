@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -64,7 +65,7 @@ namespace WebTimKiemBacSi.Controllers
                             Email = dangKy.Email,
                             SoDienThoai = dangKy.SoDienThoai,
                             MatKhau = dangKy.MatKhau,
-                            NgayDangKy=DateTime.Now
+                            NgayDangKy = DateTime.Now
                         };
                         _db.BenhNhan.Add(benhnhan);
                         _db.SaveChanges();
@@ -82,9 +83,9 @@ namespace WebTimKiemBacSi.Controllers
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DangNhap(string email,string password)
+        public async Task<IActionResult> DangNhap(string email, string password)
         {
-            if(string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             {
                 ModelState.AddModelError(string.Empty, "Vui lòng nhập đầy đủ thông tin.");
                 return View();
@@ -92,10 +93,10 @@ namespace WebTimKiemBacSi.Controllers
             object user = null;
             string role = "";
             string userId = "";
-            var bacSi=_db.BacSi.FirstOrDefault(b => b.Email == email && b.MatKhau == password);
-            if(bacSi != null)
+            var bacSi = _db.BacSi.FirstOrDefault(b => b.Email == email && b.MatKhau == password);
+            if (bacSi != null)
             {
-                if(bacSi.TrangThai != 1)
+                if (bacSi.TrangThai != 1)
                 {
                     ModelState.AddModelError(string.Empty, "Tài khoản của bạn đang bị khóa hoặc chưa được kích hoạt.");
                     return View();
@@ -104,27 +105,27 @@ namespace WebTimKiemBacSi.Controllers
                 role = "BacSi";
                 userId = bacSi.IdBacSi.ToString();
             }
-            if (user==null)
+            if (user == null)
             {
                 var benhNhan = _db.BenhNhan.FirstOrDefault(bn => bn.Email == email && bn.MatKhau == password);
                 if (benhNhan != null)
                 {
-                    user= benhNhan;
+                    user = benhNhan;
                     role = "BenhNhan";
                     userId = benhNhan.IdBenhNhan.ToString();
                 }
             }
-            if(user==null)
+            if (user == null)
             {
                 var canBoHanhChinh = _db.CanBoHanhChinh.FirstOrDefault(cb => cb.Email == email && cb.MatKhau == password);
                 if (canBoHanhChinh != null)
                 {
-                    user= canBoHanhChinh;
+                    user = canBoHanhChinh;
                     role = "CanBoHanhChinh";
                     userId = canBoHanhChinh.IdCanBo.ToString();
                 }
             }
-            if(user!=null)
+            if (user != null)
             {
                 var claims = new List<System.Security.Claims.Claim>
                 {
@@ -136,6 +137,8 @@ namespace WebTimKiemBacSi.Controllers
                 var identity = new System.Security.Claims.ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new System.Security.Claims.ClaimsPrincipal(identity));
                 TempData["Success"] = "Đăng nhập thành công!";
+                if (role == "CanBoHanhChinh")
+                    return RedirectToAction("Dashboard", "TaiKhoan");
                 return RedirectToAction("Index", "Home");
             }
             ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không đúng.");
@@ -155,14 +158,15 @@ namespace WebTimKiemBacSi.Controllers
             if (userId == null)
                 return RedirectToAction("DangNhap");
             int id = int.Parse(userId);
-            TaiKhoanCaNhanVM taiKhoanCaNhanVM = new TaiKhoanCaNhanVM { 
+            TaiKhoanCaNhanVM taiKhoanCaNhanVM = new TaiKhoanCaNhanVM
+            {
                 Id = id,
                 Role = role,
                 Email = email
             };
             if (role == "BenhNhan")
             {
-                var idBenhNhan=_db.BenhNhan.Find(id);
+                var idBenhNhan = _db.BenhNhan.Find(id);
                 taiKhoanCaNhanVM.HoTen = idBenhNhan.HoTen;
                 taiKhoanCaNhanVM.SoDienThoai = idBenhNhan.SoDienThoai;
                 taiKhoanCaNhanVM.CCCD = idBenhNhan.CCCD;
@@ -170,9 +174,9 @@ namespace WebTimKiemBacSi.Controllers
                 taiKhoanCaNhanVM.GioiTinh = idBenhNhan.GioiTinh;
                 taiKhoanCaNhanVM.IdPhuongXa = idBenhNhan.IdPhuongXa;
             }
-            else if (role=="BacSi")
+            else if (role == "BacSi")
             {
-                var idBacSi=_db.BacSi.Find(id);
+                var idBacSi = _db.BacSi.Find(id);
                 taiKhoanCaNhanVM.HoTen = idBacSi.HoTen;
                 taiKhoanCaNhanVM.SoDienThoai = idBacSi.SoDienThoai;
                 taiKhoanCaNhanVM.CCCD = idBacSi.CCCD;
@@ -182,7 +186,7 @@ namespace WebTimKiemBacSi.Controllers
             }
             else
             {
-                var idCanBo=_db.CanBoHanhChinh.Find(id);
+                var idCanBo = _db.CanBoHanhChinh.Find(id);
                 taiKhoanCaNhanVM.HoTen = idCanBo.HoTen;
                 taiKhoanCaNhanVM.SoDienThoai = idCanBo.SoDienThoai;
                 taiKhoanCaNhanVM.CCCD = idCanBo.CCCD;
@@ -206,18 +210,18 @@ namespace WebTimKiemBacSi.Controllers
                 if (model.Role == "BenhNhan")
                 {
                     var idBenhNhan = _db.BenhNhan.Find(model.Id);
-                    idBenhNhan.SoDienThoai = model.SoDienThoai; 
+                    idBenhNhan.SoDienThoai = model.SoDienThoai;
                     idBenhNhan.CCCD = model.CCCD;
-                    idBenhNhan.soNhaTenDuong = model.soNhaTenDuong; 
+                    idBenhNhan.soNhaTenDuong = model.soNhaTenDuong;
                     idBenhNhan.GioiTinh = model.GioiTinh;
                     idBenhNhan.IdPhuongXa = model.IdPhuongXa;
                 }
                 else if (model.Role == "BacSi")
                 {
                     var u = _db.BacSi.Find(model.Id);
-                    u.SoDienThoai = model.SoDienThoai; 
+                    u.SoDienThoai = model.SoDienThoai;
                     u.CCCD = model.CCCD;
-                    u.soNhaTenDuong = model.soNhaTenDuong; 
+                    u.soNhaTenDuong = model.soNhaTenDuong;
                     u.GioiTinh = model.GioiTinh;
                     u.IdPhuongXa = model.IdPhuongXa;
                 }
@@ -227,6 +231,27 @@ namespace WebTimKiemBacSi.Controllers
                 return RedirectToAction("TaiKhoanCaNhan");
             }
             return View(model);
+        }
+        [Authorize(Roles = "CanBoHanhChinh")]
+        public IActionResult Dashboard()
+        {
+            var thongKe = _db.ThongKeTimKiem.OrderByDescending(tk => tk.SoLuotTim).Take(10).ToList();
+            ViewBag.TotalBacSi = _db.BacSi.Count();
+            ViewBag.TotalBenhNhan = _db.BenhNhan.Count();
+            ViewBag.TotalTimKiem = _db.TimKiem.Count();
+            return View(thongKe);
+        }
+        [Authorize(Roles = "CanBoHanhChinh")]
+        public IActionResult QuanLyBacSi()
+        {
+            var list = _db.BacSi.ToList();
+            return View(list);
+        }
+        [Authorize(Roles ="CanBoHanhChinh")]
+        public IActionResult QuanLyBenhNhan()
+        {
+            var list = _db.BenhNhan.ToList();
+            return View(list);
         }
     }
 }
