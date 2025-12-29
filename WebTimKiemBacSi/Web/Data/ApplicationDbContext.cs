@@ -20,6 +20,8 @@ namespace Web.Data
         public DbSet<LichLamViec> LichLamViec { get; set; }
         public DbSet<CanBoHanhChinh> CanBoHanhChinh { get; set; }
         public DbSet<TimKiem> TimKiem { get; set; }
+        public DbSet<BaoCao> BaoCao { get; set; }
+        public DbSet<PhuongXa> PhuongXa { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

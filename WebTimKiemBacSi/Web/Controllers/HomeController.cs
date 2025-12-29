@@ -82,6 +82,26 @@ namespace Web.Controllers
             }
             return View(bacSi);
         }
+        [HttpPost]
+        public async Task<IActionResult> TheoDoiBacSi(int idBacSi)
+        {
+            var userId = User.FindFirstValue("UserId");
+            if (string.IsNullOrEmpty(userId) || !User.IsInRole("BenhNhan"))
+                return Json(new { success = false, message = "Bạn cần đăng nhập với tài khoản bệnh nhân!" });
+            int idBenhNhan = int.Parse(userId);
+            var daTheoDoi = _db.TheoDoi.Any(kt => kt.IdBacSi == idBacSi && kt.IdBenhNhan == idBenhNhan);
+            if (daTheoDoi)
+                return Json(new { success = false, message = "Bạn đã theo dõi bác sĩ này rồi!" });
+            var theoDoi = new TheoDoi
+            {
+                IdBacSi = idBacSi,
+                IdBenhNhan = idBenhNhan,
+                NgayBatDauTheoDoi = DateTime.Now
+            };
+            _db.TheoDoi.Add(theoDoi);
+            await _db.SaveChangesAsync();
+            return Json(new { success = true, message = "Theo dõi bác sĩ thành công!" });
+        }
         public IActionResult Privacy()
         {
             return View();

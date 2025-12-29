@@ -37,7 +37,11 @@
                                     <span class="badge bg-info-subtle text-info small">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                    <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Cài đặt tài khoản</a></li>
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="TaiKhoan" asp-action="TaiKhoanCaNhan">
+                                            <i class="bi bi-gear me-2"></i>Cài đặt tài khoản
+                                        </a>
+                                    </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <a class="dropdown-item text-danger" asp-controller="TaiKhoan" asp-action="DangXuat">
