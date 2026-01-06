@@ -22,6 +22,7 @@ CREATE TABLE PhuongXa (
     FOREIGN KEY (IdTinhThanh) REFERENCES TinhThanh(IdTinhThanh)
 );
 -- BỆNH VIỆN KHU PHÒNG
+GO
 CREATE TABLE BenhVien (
     IdBenhVien INT IDENTITY PRIMARY KEY,
     TenBenhVien NVARCHAR(200),
@@ -350,7 +351,8 @@ VALUES (1, '0905111222', N'Phạm Minh Huy', 'Huy@gmail.com', 'Huy123!@#', '1980
 (7,'0906000004',N'Phan Thị Hồng','hong@bv.vn','123','1994-05-05',N'Nữ',N'Bác sĩ',3,N'CCHN-44444',N'Trẻ trung',N'Chăm sóc tận tình','hong.jpg',N'99 Yersin','049200004444',7,7),
 (8,  '0907000008', N'Ngô Đức An',      'An@bv.vn',   '123', '1983-08-08', N'NAM', N'Thạc sĩ',     11, N'CCHN-88888', N'Chuyên gia thần kinh', N'Nội thần kinh', 'an.jpg',  N'12 Trường Thi',         '049200008888', 8, 8),
 (9,  '0907000009', N'Vũ Thị Thanh',    'Thanh@bv.vn','123', '1989-09-09', N'NỮ',  N'Bác sĩ CKI',  9,  N'CCHN-99999', N'Giỏi răng hàm mặt',     N'RHM nhiều kinh nghiệm', 'thanh2.jpg', N'88 Nguyễn Lương Bằng', '049200009999', 9, 9),
-(10, '0907000010', N'Trần Minh Khang', 'Khang@bv.vn','123', '1992-10-10', N'NAM', N'Tiến sĩ',     13, N'CCHN-101010',N'Chẩn đoán hình ảnh',    N'CDHA',          'khang.jpg', N'05 Trần Phú',          '049200010101', 10, 10);
+(10, '0907000010', N'Trần Minh Khang', 'Khang@bv.vn','123', '1992-10-10', N'NAM', N'Tiến sĩ',     13, N'CCHN-101010',N'Chẩn đoán hình ảnh',    N'CDHA',          'khang.jpg', N'05 Trần Phú',          '049200010101', 10, 10),
+(11, '0907000010', N'Nguyễn Văn Phát', 'Phat@bv.vn','123', '1992-10-10', N'NAM', N'Tiến sĩ',     13, N'CCHN-101010',N'Chẩn đoán hình ảnh',    N'CDHA',          'khang.jpg', N'05 Trần Phú',          '049200010144', 10, 10);
 SET IDENTITY_INSERT BacSi OFF;
 -- 7. BỆNH NHÂN
 SET IDENTITY_INSERT BenhNhan ON;
@@ -406,8 +408,8 @@ VALUES (1, 1),
 SET IDENTITY_INSERT LichLamViec ON;
 INSERT INTO LichLamViec (IdLichLamViec, NgayLamViec, KhungGio, TrangThai, IdBacSi, IdPhong) VALUES 
 (1,'2024-12-30','07:30 - 11:30',N'Sẵn sàng',1,1),
-(2,'2024-12-30','13:30 - 17:00',N'Sẵn sàng',2,2),
-(3,'2024-12-31','07:30 - 11:30',N'Sẵn sàng',3,3),
+(2,'2024-12-30','13:30 - 17:00',N'Sẵn sàng',2,1),
+(3,'2024-12-31','07:30 - 11:30',N'Sẵn sàng',3,1),
 (4,'2025-01-02','07:30 - 11:30',N'Sẵn sàng',4,4),
 (5,'2025-01-02','13:30 - 17:00',N'Sẵn sàng',5,5),
 (6,'2025-01-03','07:30 - 11:30',N'Sẵn sàng',6,6),
@@ -1063,6 +1065,81 @@ FROM BacSi b
 JOIN DanhGia d ON b.IdBacSi = d.IdBacSi
 GROUP BY b.IdBacSi, b.HoTen
 ORDER BY ThuHang ASC;
+--20. fn_ThongKeTheoChuyenKhoa thống kê bác sĩ theo chuyên khoa
+GO
+CREATE FUNCTION fn_ThongKeTheoChuyenKhoa(@tenChuyenKhoa nvarchar(100))
+RETURNS TABLE
+RETURN
+(
+    SELECT bs.*, ck.TenChuyenKhoa ,bv.TenBenhVien
+    FROM BacSi bs
+    JOIN ChuyenKhoa_BacSi ckbs ON bs.IdBacSi = ckbs.IdBacSi
+    JOIN ChuyenKhoa ck ON ckbs.IdChuyenKhoa = ck.IdChuyenKhoa
+    JOIN BenhVien bv ON bs.IdBenhVien = bv.IdBenhVien
+    WHERE ck.TenChuyenKhoa LIKE N'%' + @tenChuyenKhoa + N'%'
+)
+-- chạy function 20
+GO
+SELECT * FROM dbo.fn_ThongKeTheoChuyenKhoa(N'nội');
+-- 21. fn_ThongKeTheoBenhVien thống kê bác sĩ theo bệnh viện
+GO
+CREATE OR ALTER FUNCTION fn_ThongKeBacSiTheoBenhVien(@tenBenhVien NVARCHAR(200))
+RETURNS TABLE
+AS
+RETURN (
+    SELECT bs.HoTen, bs.BangCap, bs.SoDienThoai, bv.TenBenhVien, bv.HotLine AS HotlineBenhVien
+    FROM BacSi bs
+    LEFT JOIN BenhVien bv ON bs.IdBenhVien = bv.IdBenhVien
+    WHERE (@tenBenhVien IS NULL OR bv.TenBenhVien LIKE N'%' + @tenBenhVien + N'%')
+);
+-- chạy function 21
+GO
+SELECT * FROM dbo.fn_ThongKeBacSiTheoBenhVien(N'Đà Nẵng')
+--22. fn_ThongKeBacSiTheoKhuVuc thống kê bác sĩ theo khu vực tỉnh thành
+GO
+CREATE OR ALTER FUNCTION fn_ThongKeBacSiTheoKhuVuc(@tenTinh NVARCHAR(100))
+RETURNS TABLE
+AS
+RETURN (
+    SELECT bs.HoTen, bs.SoDienThoai, px.TenPhuongXa, tt.TenTinhThanh
+    FROM BacSi bs
+    LEFT JOIN PhuongXa px ON bs.IdPhuongXa = px.IdPhuongXa
+    LEFT JOIN TinhThanh tt ON px.IdTinhThanh = tt.IdTinhThanh
+    WHERE tt.TenTinhThanh LIKE N'%' + @tenTinh + N'%'
+)
+GO
+-- chạy function 22
+SELECT * FROM dbo.fn_ThongKeBacSiTheoKhuVuc(N'Hồ Chí Minh')
+--23. fn_ThongKeBacSiTheoPhong thống kê bác sĩ theo phòng
+GO
+CREATE OR ALTER FUNCTION fn_ThongKeBacSiTheoPhong(@tenPhong NVARCHAR(100)=NULL)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT DISTINCT bs.HoTen, bs.ChungChiHanhNghe, p.TenPhong, p.Tang, k.TenKhu
+    FROM BacSi bs
+    JOIN LichLamViec l ON bs.IdBacSi = l.IdBacSi
+    JOIN Phong p ON l.IdPhong = p.IdPhong
+    LEFT JOIN Khu k ON p.IdKhu = k.IdKhu
+    WHERE (@tenPhong IS NULL OR p.TenPhong LIKE N'%' + @tenPhong + N'%')
+)
+-- chạy function 23
+GO
+SELECT * FROM dbo.fn_ThongKeBacSiTheoPhong(NULL)
+-- 24. fn_ThongKeBacSiTheoGioiTinh thống kê bác sĩ theo giới tính
+GO
+CREATE OR ALTER FUNCTION fn_ThongKeBacSiTheoGioiTinh(@gioiTinh NVARCHAR(10)=NULL)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT bs.HoTen, bs.GioiTinh, bs.BangCap, bs.NamKinhNghiem, bv.TenBenhVien
+    FROM BacSi bs
+    LEFT JOIN BenhVien bv ON bs.IdBenhVien = bv.IdBenhVien
+    WHERE (@gioiTinh IS NULL OR bs.GioiTinh = @gioiTinh)
+);
+GO
+-- chạy function 24
+SELECT * FROM dbo.fn_ThongKeBacSiTheoGioiTinh('nam')
 -------------------------------------------------------------PROC---------------------------------------------------------------
 GO
 USE TimKiemThongTinBacSi;
@@ -1967,3 +2044,6 @@ GO
 	WHERE IdBacSi = 1;
 
 	SELECT * FROM dbo.Log_Changes; -- Kiểm tra bản ghi log cũ và mới*/
+
+     update bacsi set cccd='049200010122' where idbacsi=11
+     select * from bacsi where Hoten=N'Nguyễn Văn Phát'
