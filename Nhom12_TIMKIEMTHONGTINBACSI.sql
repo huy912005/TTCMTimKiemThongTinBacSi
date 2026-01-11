@@ -1191,8 +1191,15 @@ RETURN (
 GO
 -- chạy function 25
 SELECT * FROM dbo.fn_ThongKeBacSiTheoGioiTinh(N'Nam')
-
-select * from bacsi
+-- 26. fn_ThongKeBacSiTheoBangCap thống kê bác sĩ theo bằng cấp
+GO
+CREATE OR ALTER FUNCTION fn_ThongKeBacSiTheoBangCap(@bangCap NVARCHAR(30))
+RETURNS TABLE
+AS
+RETURN SELECT * FROM BACSI WHERE BangCap=@bangCap
+-- chạy function 26
+GO
+SELECT * FROM fn_ThongKeBacSiTheoBangCap(N'Tiến sĩ')
 -------------------------------------------------------------PROC---------------------------------------------------------------
 GO
 USE TimKiemThongTinBacSi;
