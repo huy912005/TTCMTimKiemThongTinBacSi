@@ -1886,52 +1886,8 @@ VALUES ('0905123456', N'Bác sĩ Trẻ', '2010-01-01', 1, 1);
 DELETE 
 FROM BACSI
 WHERE HoTen=N'Bác sĩ Trẻ'
---3. TG_CapNhatTrangThaiLich: Khi một lịch khám (Appointment) được tạo thành công, trigger này tự động cập nhật trạng thái khung giờ đó của bác sĩ từ "Trống" sang "Đã đặt" để người sau không tìm thấy khung giờ đó nữa.
-IF OBJECT_ID(N'dbo.LichHen', N'U') IS NOT NULL
-BEGIN
-    EXEC(N'
-    CREATE OR ALTER TRIGGER dbo.TG_CapNhatTrangThaiLich
-    ON dbo.LichHen
-    AFTER INSERT
-    AS
-    BEGIN
-        SET NOCOUNT ON;
-
-        IF EXISTS
-        (
-            SELECT 1
-            FROM inserted i
-            LEFT JOIN dbo.LichLamViec llv
-              ON llv.IdBacSi = i.IdBacSi
-             AND llv.NgayLamViec = i.NgayHen
-             AND llv.KhungGio = i.KhungGio
-             AND (i.IdPhong IS NULL OR llv.IdPhong = i.IdPhong)
-             AND llv.TrangThai = N''Trống''
-            WHERE llv.IdLichLamViec IS NULL
-        )
-        BEGIN
-            THROW 51010, N''Khung giờ không còn trống hoặc không tồn tại trong lịch làm việc.'', 1;
-        END
-
-        UPDATE llv
-        SET llv.TrangThai = N''Đã đặt''
-        FROM dbo.LichLamViec llv
-        JOIN inserted i
-          ON llv.IdBacSi = i.IdBacSi
-         AND llv.NgayLamViec = i.NgayHen
-         AND llv.KhungGio = i.KhungGio
-         AND (i.IdPhong IS NULL OR llv.IdPhong = i.IdPhong)
-        WHERE llv.TrangThai = N''Trống'';
-    END
-    ');
-END
-ELSE
-BEGIN
-    PRINT N'Bỏ qua tạo TG_CapNhatTrangThaiLich vì chưa có bảng dbo.LichHen (Appointment).';
-END
+--3. TG_TuDongTaoThongBao: Khi Cán bộ cập nhật thông tin Bệnh viện (như đổi địa chỉ hoặc hotline), trigger này tự động chèn một bản ghi vào bảng ThongBao cho tất cả Bác sĩ thuộc bệnh viện đó biết.
 GO
-
---4. TG_TuDongTaoThongBao: Khi Cán bộ cập nhật thông tin Bệnh viện (như đổi địa chỉ hoặc hotline), trigger này tự động chèn một bản ghi vào bảng ThongBao cho tất cả Bác sĩ thuộc bệnh viện đó biết.
 CREATE OR ALTER TRIGGER dbo.TG_TuDongTaoThongBao
 ON dbo.BenhVien
 AFTER UPDATE
@@ -2022,7 +1978,7 @@ BEGIN
     JOIN dbo.BacSi bs ON bs.IdBenhVien = m.IdBenhVien;
 END
 GO
--- 5. TG_GhiLogTimKiem: Tự động tổng hợp từ khóa hot để phục vụ thống kê bác sĩ được quan tâm nhất.
+-- 4. TG_GhiLogTimKiem: Tự động tổng hợp từ khóa hot để phục vụ thống kê bác sĩ được quan tâm nhất.
 IF OBJECT_ID('dbo.ThongKeTimKiem', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.ThongKeTimKiem (
@@ -2056,7 +2012,7 @@ GO
 
 	SELECT * FROM dbo.ThongKeTimKiem; -- Kiểm tra số lượt tìm tăng lên 1
 
--- 6. TG_LuuLichSuThayDoiThongTin: Lưu vết thay đổi SĐT hoặc Email của Bác sĩ vào bảng Log_Changes.
+-- 5. TG_LuuLichSuThayDoiThongTin: Lưu vết thay đổi SĐT hoặc Email của Bác sĩ vào bảng Log_Changes.
 IF OBJECT_ID('dbo.Log_Changes', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.Log_Changes (
