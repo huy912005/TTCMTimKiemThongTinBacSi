@@ -408,7 +408,7 @@ INSERT INTO ChuyenKhoa (IdChuyenKhoa, TenChuyenKhoa, MoTa) VALUES
 SET IDENTITY_INSERT ChuyenKhoa OFF;
 -- 10. CHUYÊN KHOA_BÁC SĨ (Bảng trung gian, không có Identity nên insert bình thường)
 INSERT INTO ChuyenKhoa_BacSi (IdBacSi, IdChuyenKhoa) 
-VALUES (1, 1), 
+VALUES (1, 1),(1,5),(1,4),
 (2, 2), 
 (3, 3),
 (4,4),(5,5),(5,2),(6,6),(7,7),(8, 8),
@@ -1117,6 +1117,7 @@ RETURNS TABLE
 AS
 RETURN(
     SELECT 
+        bs.IdBacSi,
         bs.HoTen,
         COUNT(*) AS SoChuyenKhoa,
         STRING_AGG(ck.TenChuyenKhoa, ', ') AS DanhSachChuyenKhoa
@@ -1125,7 +1126,7 @@ RETURN(
         ON bs.IdBacSi = ckbs.IdBacSi
     JOIN ChuyenKhoa ck
         ON ckbs.IdChuyenKhoa = ck.IdChuyenKhoa
-    GROUP BY bs.HoTen
+    GROUP BY  bs.IdBacSi,bs.HoTen
     HAVING COUNT(*) >= 2  
 )
 -- chạy function 21
@@ -1189,7 +1190,9 @@ RETURN (
 );
 GO
 -- chạy function 25
-SELECT * FROM dbo.fn_ThongKeBacSiTheoGioiTinh(null)
+SELECT * FROM dbo.fn_ThongKeBacSiTheoGioiTinh(N'Nam')
+
+select * from bacsi
 -------------------------------------------------------------PROC---------------------------------------------------------------
 GO
 USE TimKiemThongTinBacSi;
