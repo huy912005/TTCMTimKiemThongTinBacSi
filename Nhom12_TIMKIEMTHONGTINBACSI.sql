@@ -642,6 +642,7 @@ FROM BacSi bs
 JOIN ChuyenKhoa_BacSi ckbs ON bs.IdBacSi = ckbs.IdBacSi
 GROUP BY bs.HoTen
 HAVING COUNT(*) >= 2;
+
 -------------------------------------------------------------FUNCTION---------------------------------------------------------------
 --1. fn_DinhDangSoDienThoai: Chuyển số điện thoại về định dạng chuẩn (vd: 090... -> +84...).
 IF OBJECT_ID('dbo.fn_DinhDangSoDienThoai', 'FN') IS NOT NULL
@@ -1108,7 +1109,29 @@ RETURN
 -- chạy function 20
 GO
 SELECT * FROM dbo.fn_ThongKeTheoChuyenKhoa(N'nội');
--- 21. fn_ThongKeTheoBenhVien thống kê bác sĩ theo bệnh viện
+
+--21. fn_ThongKeBSTren2ChuyenKhoa thống kê bác sĩ trên 2 chuyên khoa
+GO
+CREATE OR ALTER FUNCTION fn_ThongKeBSTren2ChuyenKhoa()
+RETURNS TABLE
+AS
+RETURN(
+    SELECT 
+        bs.HoTen,
+        COUNT(*) AS SoChuyenKhoa,
+        STRING_AGG(ck.TenChuyenKhoa, ', ') AS DanhSachChuyenKhoa
+    FROM BacSi bs
+    JOIN ChuyenKhoa_BacSi ckbs 
+        ON bs.IdBacSi = ckbs.IdBacSi
+    JOIN ChuyenKhoa ck
+        ON ckbs.IdChuyenKhoa = ck.IdChuyenKhoa
+    GROUP BY bs.HoTen
+    HAVING COUNT(*) >= 2  
+)
+-- chạy function 21
+GO
+select * from fn_ThongKeBSTren2ChuyenKhoa()
+-- 22. fn_ThongKeTheoBenhVien thống kê bác sĩ theo bệnh viện
 GO
 CREATE OR ALTER FUNCTION fn_ThongKeBacSiTheoBenhVien(@tenBenhVien NVARCHAR(200))
 RETURNS TABLE
@@ -1119,10 +1142,10 @@ RETURN (
     LEFT JOIN BenhVien bv ON bs.IdBenhVien = bv.IdBenhVien
     WHERE (@tenBenhVien IS NULL OR bv.TenBenhVien LIKE N'%' + @tenBenhVien + N'%')
 );
--- chạy function 21
+-- chạy function 22
 GO
 SELECT * FROM dbo.fn_ThongKeBacSiTheoBenhVien(N'Đà Nẵng')
---22. fn_ThongKeBacSiTheoKhuVuc thống kê bác sĩ theo khu vực tỉnh thành
+--23. fn_ThongKeBacSiTheoKhuVuc thống kê bác sĩ theo khu vực tỉnh thành
 GO
 CREATE OR ALTER FUNCTION fn_ThongKeBacSiTheoKhuVuc(@tenTinh NVARCHAR(100))
 RETURNS TABLE
@@ -1135,9 +1158,9 @@ RETURN (
     WHERE tt.TenTinhThanh LIKE N'%' + @tenTinh + N'%'
 )
 GO
--- chạy function 22
+-- chạy function 23
 SELECT * FROM dbo.fn_ThongKeBacSiTheoKhuVuc(N'Hồ Chí Minh')
---23. fn_ThongKeBacSiTheoPhong thống kê bác sĩ theo phòng
+--24. fn_ThongKeBacSiTheoPhong thống kê bác sĩ theo phòng
 GO
 CREATE OR ALTER FUNCTION fn_ThongKeBacSiTheoPhong(@tenPhong NVARCHAR(100)=NULL)
 RETURNS TABLE
@@ -1150,10 +1173,10 @@ RETURN (
     LEFT JOIN Khu k ON p.IdKhu = k.IdKhu
     WHERE (@tenPhong IS NULL OR p.TenPhong LIKE N'%' + @tenPhong + N'%')
 )
--- chạy function 23
+-- chạy function 24
 GO
 SELECT * FROM dbo.fn_ThongKeBacSiTheoPhong(NULL)
--- 24. fn_ThongKeBacSiTheoGioiTinh thống kê bác sĩ theo giới tính
+-- 25. fn_ThongKeBacSiTheoGioiTinh thống kê bác sĩ theo giới tính
 GO
 CREATE OR ALTER FUNCTION fn_ThongKeBacSiTheoGioiTinh(@gioiTinh NVARCHAR(10)=NULL)
 RETURNS TABLE
@@ -1165,7 +1188,7 @@ RETURN (
     WHERE (@gioiTinh IS NULL OR bs.GioiTinh = @gioiTinh)
 );
 GO
--- chạy function 24
+-- chạy function 25
 SELECT * FROM dbo.fn_ThongKeBacSiTheoGioiTinh(null)
 -------------------------------------------------------------PROC---------------------------------------------------------------
 GO
