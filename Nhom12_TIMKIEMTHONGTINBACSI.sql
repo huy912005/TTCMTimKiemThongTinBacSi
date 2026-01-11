@@ -500,7 +500,8 @@ VALUES
 (7,N'Bác sĩ da liễu Khánh Hòa',GETDATE(),N'Nha Trang',7),
 (8,  N'Bác sĩ thần kinh Nghệ An',   GETDATE(), N'Vinh',     8),
 (9,  N'Khám răng Hải Dương',        GETDATE(), N'Hải Dương', 9),
-(10, N'Nguyễn Phước Quý Bửu',GETDATE(), N'Đà Lạt',    10);
+(10, N'Nguyễn Phước Quý Bửu',GETDATE(), N'Đà Lạt',    10),
+(11, N'Phạm Minh Huy',GETDATE(), N'Đà Lạt', 5);
 SET IDENTITY_INSERT TimKiem OFF;
 -- 18. BÁO CÁO
 SET IDENTITY_INSERT BaoCao ON;
@@ -1139,7 +1140,7 @@ RETURN (
 );
 GO
 -- chạy function 24
-SELECT * FROM dbo.fn_ThongKeBacSiTheoGioiTinh('nam')
+SELECT * FROM dbo.fn_ThongKeBacSiTheoGioiTinh(null)
 -------------------------------------------------------------PROC---------------------------------------------------------------
 GO
 USE TimKiemThongTinBacSi;
@@ -2047,3 +2048,9 @@ GO
 
      update bacsi set cccd='049200010122' where idbacsi=11
      select * from bacsi where Hoten=N'Nguyễn Văn Phát'
+
+
+--SET IDENTITY_INSERT TimKiem ON;
+--INSERT INTO TimKiem (IdTimKiem, TuKhoaTK, ThoiGianTK, ViTriTimKiem, IdBenhNhan) 
+--values (13, N'Phạm Minh Huy',GETDATE(), N'Đà Lạt', 5);
+--SET IDENTITY_INSERT TimKiem OFF;
