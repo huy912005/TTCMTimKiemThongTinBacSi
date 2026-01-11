@@ -349,10 +349,20 @@ VALUES (1, '0905111222', N'Phạm Minh Huy', 'Huy@gmail.com', 'Huy123!@#', '1980
 (5,'0906000002',N'Nguyễn Thị Mai','mai@bv.vn','123','1987-03-03',N'Nữ',N'Bác sĩ CKI',8,N'CCHN-22222',N'Tận tâm bệnh nhân',N'Chuyên khoa tổng quát','mai.jpg',N'22 Phan Bội Châu','049200002222',5,5),
 (6,'0906000003',N'Trần Hoàng Long','long@bv.vn','123','1991-04-04',N'Nam',N'Bác sĩ',5,N'CCHN-33333',N'Nhiệt huyết',N'Luôn học hỏi','long.jpg',N'45 Nguyễn Huệ','049200003333',6,6),
 (7,'0906000004',N'Phan Thị Hồng','hong@bv.vn','123','1994-05-05',N'Nữ',N'Bác sĩ',3,N'CCHN-44444',N'Trẻ trung',N'Chăm sóc tận tình','hong.jpg',N'99 Yersin','049200004444',7,7),
-(8,  '0907000008', N'Ngô Đức An',      'An@bv.vn',   '123', '1983-08-08', N'NAM', N'Thạc sĩ',     11, N'CCHN-88888', N'Chuyên gia thần kinh', N'Nội thần kinh', 'an.jpg',  N'12 Trường Thi',         '049200008888', 8, 8),
-(9,  '0907000009', N'Vũ Thị Thanh',    'Thanh@bv.vn','123', '1989-09-09', N'NỮ',  N'Bác sĩ CKI',  9,  N'CCHN-99999', N'Giỏi răng hàm mặt',     N'RHM nhiều kinh nghiệm', 'thanh2.jpg', N'88 Nguyễn Lương Bằng', '049200009999', 9, 9),
-(10, '0907000010', N'Trần Minh Khang', 'Khang@bv.vn','123', '1992-10-10', N'NAM', N'Tiến sĩ',     13, N'CCHN-101010',N'Chẩn đoán hình ảnh',    N'CDHA',          'khang.jpg', N'05 Trần Phú',          '049200010101', 10, 10),
-(11, '0907000010', N'Nguyễn Văn Phát', 'Phat@bv.vn','123', '1992-10-10', N'NAM', N'Tiến sĩ',     13, N'CCHN-101010',N'Chẩn đoán hình ảnh',    N'CDHA',          'khang.jpg', N'05 Trần Phú',          '049200010144', 10, 10);
+(8,'0907000008', N'Ngô Đức An','An@bv.vn','123','1983-08-08',N'NAM',N'Thạc sĩ',11, N'CCHN-88888', N'Chuyên gia thần kinh', N'Nội thần kinh','an.jpg',N'12 Trường Thi','049200008888', 8, 8),
+(9,'0907000009', N'Vũ Thị Thanh','Thanh@bv.vn','123', '1989-09-09', N'NỮ',  N'Bác sĩ CKI',9,N'CCHN-99999', N'Giỏi răng hàm mặt',N'RHM nhiều kinh nghiệm', 'thanh2.jpg', N'88 Nguyễn Lương Bằng','049200009999', 9, 9),
+(10,'0907000010', N'Trần Minh Khang','Khang@bv.vn','123', '1992-10-10', N'NAM', N'Tiến sĩ',13, N'CCHN-101010',N'Chẩn đoán hình ảnh',N'CDHA','khang.jpg', N'05 Trần Phú','049200010101', 10, 10),
+(11,'0907000010', N'Nguyễn Văn Phát','Phat@bv.vn','123', '1992-10-10', N'NAM', N'Tiến sĩ',13, N'CCHN-101010',N'Chẩn đoán hình ảnh',N'CDHA','khang.jpg', N'05 Trần Phú','049200010144', 10, 10),
+(12,'0909000017',N'Nguyễn Thị Thu Hà','thuha@bv.vn','123','1988-01-15',N'Nữ',N'Thạc sĩ',10,N'CCHN-171717',N'Nội khoa giỏi',N'Bác sĩ nội khoa nhiều kinh nghiệm','ha.jpg',N'18 Nguyễn Du','049200017171',1,1),
+(13,'0909000018',N'Trần Thị Bích Ngọc','bichngoc@bv.vn','123','1991-02-20',N'Nữ',N'Bác sĩ CKI',7,N'CCHN-181818',N'Nhi khoa tận tâm',N'Chuyên điều trị nhi','ngoc2.jpg',N'55 Lê Quý Đôn','049200018181',2,2),
+(14,'0909000019',N'Phạm Thị Thanh Trúc','truc@bv.vn','123','1993-03-25',N'Nữ',N'Bác sĩ',5,N'CCHN-191919',N'Da liễu thẩm mỹ',N'Chăm sóc da','truc.jpg',N'77 Hai Bà Trưng','049200019191',3,3),
+(15,'0909000020',N'Lê Thị Mỹ Linh','mylinh@bv.vn','123','1989-04-10',N'Nữ',N'Thạc sĩ',9,N'CCHN-202020',N'Sản khoa giỏi',N'Chăm sóc thai kỳ','linh.jpg',N'90 Trần Hưng Đạo','049200020202',4,4),
+(16,'0909000021',N'Võ Thị Kim Oanh','oanh@bv.vn','123','1992-05-05',N'Nữ',N'Bác sĩ CKI',6,N'CCHN-212121',N'Tai mũi họng',N'Điều trị TMH','oanh.jpg',N'12 Phan Chu Trinh','049200021212',5,5),
+(17,'0909000022',N'Đặng Thị Minh Châu','chau@bv.vn','123','1994-06-18',N'Nữ',N'Bác sĩ',4,N'CCHN-222223',N'Răng hàm mặt',N'Chăm sóc răng miệng','chau.jpg',N'66 Nguyễn Văn Linh','049200022223',6,6),
+(18,'0909000023',N'Huỳnh Thị Ngọc Mai','mai2@bv.vn','123','1987-07-07',N'Nữ',N'Thạc sĩ',11,N'CCHN-232323',N'Nội thần kinh',N'Điều trị thần kinh','mai2.jpg',N'101 Lý Tự Trọng','049200023232',7,7),
+(19,'0909000024',N'Nguyễn Hoàng Đức','duc@bv.vn','123','1985-08-08',N'Nam',N'Tiến sĩ',15,N'CCHN-242424',N'Ngoại tổng quát',N'Phẫu thuật chuyên sâu','duc.jpg',N'23 Nguyễn Huệ','049200024242',8,8),
+(20,'0909000025',N'Phan Minh Nhật','nhat@bv.vn','123','1990-09-09',N'Nam',N'Bác sĩ CKI',8,N'CCHN-252525',N'Chẩn đoán hình ảnh',N'Siêu âm - CT','nhat.jpg',N'44 Trường Chinh','049200025252',9,9),
+(21,'0909000026',N'Trần Quốc Bảo','bao@bv.vn','123','1986-10-10',N'Nam',N'Thạc sĩ',12,N'CCHN-262626',N'Ung bướu',N'Điều trị ung thư','bao.jpg',N'70 Cách Mạng Tháng 8','049200026262',10,10);
 SET IDENTITY_INSERT BacSi OFF;
 -- 7. BỆNH NHÂN
 SET IDENTITY_INSERT BenhNhan ON;
@@ -401,9 +411,19 @@ INSERT INTO ChuyenKhoa_BacSi (IdBacSi, IdChuyenKhoa)
 VALUES (1, 1), 
 (2, 2), 
 (3, 3),
-(4,4),(5,5),(6,6),(7,7),(8, 8),
+(4,4),(5,5),(5,2),(6,6),(7,7),(8, 8),
 (9, 9),
-(10, 10);
+(10, 10),
+(11,1),(11,8),      -- Nội tim mạch + Nội thần kinh
+(12,2),(12,6),      -- Nhi + TMH
+(13,7),             -- Da liễu
+(14,5),             -- Sản khoa
+(15,6),(15,7),      -- TMH + Da liễu
+(16,9),             -- Răng hàm mặt
+(17,8),(17,6),(17,10),             -- Nội thần kinh
+(18,4),             -- Ngoại tổng quát
+(19,10),            -- Chẩn đoán hình ảnh
+(20,3);
 -- 11. LỊCH LÀM VIỆC
 SET IDENTITY_INSERT LichLamViec ON;
 INSERT INTO LichLamViec (IdLichLamViec, NgayLamViec, KhungGio, TrangThai, IdBacSi, IdPhong) VALUES 
@@ -616,6 +636,12 @@ FROM BenhNhan bn
 JOIN BaoCao bc ON bn.IdBenhNhan = bc.IdeBenhNhan
 GROUP BY bn.IdBenhNhan, bn.HoTen
 ORDER BY SoLuotDaBaoCao DESC;
+--Bác sĩ thuộc từ 2 chuyên khoa trở lên
+SELECT bs.HoTen, COUNT(*) AS SoChuyenKhoa
+FROM BacSi bs
+JOIN ChuyenKhoa_BacSi ckbs ON bs.IdBacSi = ckbs.IdBacSi
+GROUP BY bs.HoTen
+HAVING COUNT(*) >= 2;
 -------------------------------------------------------------FUNCTION---------------------------------------------------------------
 --1. fn_DinhDangSoDienThoai: Chuyển số điện thoại về định dạng chuẩn (vd: 090... -> +84...).
 IF OBJECT_ID('dbo.fn_DinhDangSoDienThoai', 'FN') IS NOT NULL
